@@ -1,0 +1,250 @@
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+enum Role {
+  creator
+  manager
+  reviewer
+  admin
+}
+
+enum SourceType {
+  guide
+  glossary
+  fact
+  claims
+}
+
+enum SourceStatus {
+  active
+  archived
+}
+
+enum Channel {
+  social
+  web
+  email
+  print
+  deck
+}
+
+enum SubmissionStatus {
+  draft
+  analysed
+  in_review
+  changes_requested
+  approved
+}
+
+enum AiStatus {
+  ok
+  unavailable
+  skipped
+}
+
+enum FindingOrigin {
+  rule
+  ai
+}
+
+enum FindingSeverity {
+  high
+  medium
+  low
+}
+
+enum FindingDecision {
+  pending
+  accepted
+  edited
+  rejected
+}
+
+model Workspace {
+  id          String       @id @default(uuid())
+  name        String
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  users       User[]
+  sources     Source[]
+  submissions Submission[]
+  auditLogs   AuditLog[]
+
+  @@map("workspaces")
+}
+
+model User {
+  id           String      @id @default(uuid())
+  workspaceId  String
+  email        String      @unique
+  name         String
+  role         Role
+  passwordHash String
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  workspace       Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  submissions     Submission[]    @relation("CreatorSubmissions")
+  approvedSubmissions Submission[] @relation("ApprovedSubmissions")
+  comments        Comment[]
+  createdVersions SourceVersion[]
+
+  @@index([workspaceId])
+  @@map("users")
+}
+
+model Source {
+  id          String        @id @default(uuid())
+  workspaceId String
+  type        SourceType
+  title       String
+  owner       String
+  version     Int           @default(1)
+  status      SourceStatus  @default(active)
+  expiresAt   DateTime?
+  content     String        @db.Text
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  workspace   Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  versions    SourceVersion[]
+  chunks      Chunk[]
+
+  @@index([workspaceId])
+  @@map("sources")
+}
+
+model SourceVersion {
+  id          String   @id @default(uuid())
+  sourceId    String
+  version     Int
+  content     String   @db.Text
+  createdAt   DateTime @default(now())
+  createdById String
+
+  source      Source   @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  createdBy   User     @relation(fields: [createdById], references: [id], onDelete: Cascade)
+
+  @@index([sourceId])
+  @@map("source_versions")
+}
+
+model Chunk {
+  id            String   @id @default(uuid())
+  sourceId      String
+  sourceVersion Int
+  text          String   @db.Text
+  position      Int
+  createdAt     DateTime @default(now())
+
+  source        Source   @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+
+  @@index([sourceId])
+  @@map("chunks")
+}
+
+model Submission {
+  id            String           @id @default(uuid())
+  workspaceId   String
+  creatorId     String
+  title         String
+  channel       Channel
+  originalText  String           @db.Text
+  currentText   String           @db.Text
+  status        SubmissionStatus @default(draft)
+  aiStatus      AiStatus?
+  aiModel       String?
+  approvedText  String?          @db.Text
+  approvedById  String?
+  approvedAt    DateTime?
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  workspace     Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  creator       User             @relation("CreatorSubmissions", fields: [creatorId], references: [id], onDelete: Cascade)
+  approvedBy    User?            @relation("ApprovedSubmissions", fields: [approvedById], references: [id], onDelete: SetNull)
+  findings      Finding[]
+  comments      Comment[]
+
+  @@index([workspaceId])
+  @@index([creatorId])
+  @@map("submissions")
+}
+
+model Finding {
+  id                String          @id @default(uuid())
+  submissionId      String
+  ruleId            String?
+  origin            FindingOrigin
+  category          String
+  severity          FindingSeverity
+  confidence        Float
+  start             Int?
+  end               Int?
+  snippet           String          @db.Text
+  message           String          @db.Text
+  sourceId          String?
+  sourceQuote       String?         @db.Text
+  suggestedFix      String?         @db.Text
+  needsHumanReview  Boolean         @default(false)
+  stale             Boolean         @default(false)
+  decision          FindingDecision @default(pending)
+  finalText         String?         @db.Text
+  rejectReason      String?         @db.Text
+  createdAt         DateTime        @default(now())
+
+  submission        Submission      @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+
+  @@index([submissionId])
+  @@map("findings")
+}
+
+model Comment {
+  id           String     @id @default(uuid())
+  submissionId String
+  authorId     String
+  body         String     @db.Text
+  createdAt    DateTime   @default(now())
+
+  submission   Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  author       User       @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([submissionId])
+  @@map("comments")
+}
+
+model AuditLog {
+  id          String    @id @default(uuid())
+  workspaceId String
+  actorId     String
+  action      String
+  entity      String
+  entityId    String
+  payload     Json
+  createdAt   DateTime  @default(now())
+  prevHash    String?
+  hash        String
+
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+model RateLimit {
+  id          String   @id @default(uuid())
+  key         String
+  windowStart DateTime
+  count       Int      @default(1)
+
+  @@unique([key, windowStart])
+  @@map("rate_limits")
+}
