@@ -1,4 +1,6 @@
+import "dotenv/config";
 import { ensureSeeded } from "../src/lib/seed";
+import { db } from "../src/lib/db";
 
 async function main() {
   console.log("Starting Aurora Pay database seed...");
@@ -11,8 +13,10 @@ async function main() {
     }
   } catch (error) {
     console.error("Error during seed execution:", error);
-    process.exit(1);
+    process.exitCode = 1;
+  } finally {
+    await db.$disconnect();
   }
 }
 
-main();
+void main();

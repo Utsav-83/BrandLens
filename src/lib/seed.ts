@@ -246,5 +246,5 @@ export async function ensureSeeded(): Promise<{ seeded: boolean; workspaceId: st
     );
 
     return { seeded: true, workspaceId };
-  });
+  }, { maxWait: 10_000, timeout: 60_000 });
 }
