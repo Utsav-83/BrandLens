@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { requireRole } from "@/lib/guards";
+import { requireRole, assertCanViewSubmission } from "@/lib/guards";
 
 export const runtime = "nodejs";
 
@@ -15,13 +15,10 @@ export async function GET(
   const { id } = await params;
 
   try {
-    const isRestrictedCreator = user.role === "creator";
-
     const submission = await db.submission.findFirst({
       where: {
         id,
         workspaceId: user.workspaceId,
-        ...(isRestrictedCreator ? { creatorId: user.id } : {}),
       },
       include: {
         creator: {
@@ -50,6 +47,9 @@ export async function GET(
         { status: 404 }
       );
     }
+
+    const authError = assertCanViewSubmission(user, submission);
+    if (authError) return authError;
 
     return NextResponse.json({ submission });
   } catch (error) {

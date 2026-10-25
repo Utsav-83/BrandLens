@@ -23,7 +23,28 @@ export interface AuthenticatedUser {
   workspaceId: string;
 }
 
+/**
+ * Validates that JWT_SECRET is configured with at least 32 characters in production.
+ * Throws a clear error without leaking the secret.
+ */
+export function validateJwtSecret(
+  nodeEnv: string | undefined = process.env.NODE_ENV,
+  secret: string | undefined = process.env.JWT_SECRET
+): void {
+  if (nodeEnv === "production") {
+    if (!secret || secret.length < 32) {
+      throw new Error("JWT_SECRET environment variable is missing or shorter than 32 characters in production.");
+    }
+  }
+}
+
+// Startup safety check in production
+if (process.env.NODE_ENV === "production") {
+  validateJwtSecret();
+}
+
 function getJwtSecretKey(): Uint8Array {
+  validateJwtSecret();
   const secret = process.env.JWT_SECRET || "brandlens-fallback-jwt-secret-minimum-32-chars";
   return new TextEncoder().encode(secret);
 }

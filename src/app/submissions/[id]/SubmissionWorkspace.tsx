@@ -19,6 +19,7 @@ import {
   ChevronRight,
   Loader2,
   RefreshCw,
+  Info,
 } from "lucide-react";
 import * as Diff from "diff";
 import { SeverityBadge, OriginBadge } from "@/components/SeverityBadge";
@@ -542,7 +543,7 @@ export function SubmissionWorkspace({
               <span className="text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-slate-100 text-slate-700">
                 {submission.channel}
               </span>
-              <span className="text-xs text-slate-400">Created by {submission.creator.name}</span>
+              <span className="text-xs text-slate-600">Created by {submission.creator.name}</span>
             </div>
             <h1 className="text-2xl font-bold text-slate-900 tracking-tight mt-1">
               {submission.title}
@@ -563,7 +564,7 @@ export function SubmissionWorkspace({
                         ? "bg-slate-900 text-white"
                         : status === "warning"
                         ? "bg-rose-100 text-rose-800 border border-rose-300"
-                        : "bg-slate-100 text-slate-400"
+                        : "bg-slate-100 text-slate-600"
                     }`}
                   >
                     {status === "completed" && <Check className="w-3.5 h-3.5 text-teal-600" />}
@@ -571,7 +572,7 @@ export function SubmissionWorkspace({
                     <span>{step.label}</span>
                   </div>
                   {idx < steps.length - 1 && (
-                    <ChevronRight className="w-3.5 h-3.5 text-slate-300 shrink-0" />
+                    <ChevronRight className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                   )}
                 </div>
               );
@@ -583,9 +584,9 @@ export function SubmissionWorkspace({
         <RulesOnlyBanner aiStatus={submission.aiStatus} />
 
         {isStale && (
-          <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-center justify-between text-amber-900 text-xs">
+          <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-center justify-between text-amber-950 text-xs">
             <div className="flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 text-amber-600" />
+              <AlertCircle className="w-4 h-4 text-amber-700" />
               <span>
                 <strong>Copy has changed.</strong> Previous findings are marked stale. Re-run analysis
                 to re-verify tone and claims.
@@ -596,7 +597,7 @@ export function SubmissionWorkspace({
                 type="button"
                 onClick={handleAnalyse}
                 disabled={!!actionLoading}
-                className="px-2.5 py-1 bg-amber-600 hover:bg-amber-700 text-white rounded font-medium shadow-xs"
+                className="px-2.5 py-1 bg-amber-600 hover:bg-amber-700 text-white rounded font-medium shadow-xs focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-600"
               >
                 Re-analyse Now
               </button>
@@ -604,28 +605,47 @@ export function SubmissionWorkspace({
           </div>
         )}
 
-        {actionError && (
-          <div className="p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-red-800 text-xs font-medium">
-            <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
-            <span>{actionError}</span>
-          </div>
-        )}
+        {/* Live Analysis Status Area (aria-live="polite") */}
+        <div aria-live="polite" aria-atomic="true" className="space-y-2">
+          {actionLoading === "analyse" && (
+            <div role="status" className="p-3 bg-teal-50 border border-teal-200 rounded-lg flex items-center gap-2 text-teal-900 text-xs font-medium">
+              <Loader2 className="w-4 h-4 text-teal-600 animate-spin shrink-0" aria-hidden="true" />
+              <span>Running brand analysis against guidelines and facts...</span>
+            </div>
+          )}
 
-        {actionSuccess && (
-          <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg flex items-center gap-2 text-emerald-800 text-xs font-medium">
-            <Check className="w-4 h-4 text-emerald-600 shrink-0" />
-            <span>{actionSuccess}</span>
-          </div>
-        )}
+          {actionError && (
+            <div role="alert" className="p-3 bg-red-50 border border-red-200 rounded-lg flex items-center justify-between text-red-900 text-xs font-medium">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 text-red-600 shrink-0" aria-hidden="true" />
+                <span>{actionError}</span>
+              </div>
+              <button
+                type="button"
+                onClick={handleAnalyse}
+                className="px-2.5 py-1 bg-red-100 hover:bg-red-200 text-red-900 rounded font-semibold text-xs focus:outline-none focus:ring-2 focus:ring-red-600 transition"
+              >
+                Retry
+              </button>
+            </div>
+          )}
+
+          {actionSuccess && (
+            <div role="status" className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg flex items-center gap-2 text-emerald-900 text-xs font-medium">
+              <Check className="w-4 h-4 text-emerald-600 shrink-0" aria-hidden="true" />
+              <span>{actionSuccess}</span>
+            </div>
+          )}
+        </div>
 
         {/* Action Bar by Role and State */}
         <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-100">
-          <div className="flex items-center gap-3 text-xs text-slate-500">
+          <div className="flex items-center gap-3 text-xs text-slate-600">
             <span>
               <strong>{pendingFindings.length}</strong> open finding(s)
             </span>
             <span>•</span>
-            <span className={highPendingCount > 0 ? "text-red-600 font-semibold" : ""}>
+            <span className={highPendingCount > 0 ? "text-red-700 font-semibold" : ""}>
               <strong>{highPendingCount}</strong> high severity pending
             </span>
           </div>
@@ -638,7 +658,7 @@ export function SubmissionWorkspace({
                   type="button"
                   onClick={handleAnalyse}
                   disabled={!!actionLoading}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-medium text-slate-700 bg-white hover:bg-slate-50 shadow-xs disabled:opacity-50"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-medium text-slate-700 bg-white hover:bg-slate-50 shadow-xs focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-600 disabled:opacity-50"
                 >
                   {actionLoading === "analyse" ? (
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -667,7 +687,7 @@ export function SubmissionWorkspace({
                       ? "Cannot submit: findings are stale. Re-analyse first."
                       : undefined
                   }
-                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-xs font-semibold shadow-xs disabled:opacity-50 disabled:cursor-not-allowed transition"
+                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-xs font-semibold shadow-xs focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-600 disabled:opacity-50 disabled:cursor-not-allowed transition"
                 >
                   {actionLoading === "submit-review" ? (
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -686,7 +706,7 @@ export function SubmissionWorkspace({
                   type="button"
                   onClick={() => setIsRequestingChanges(true)}
                   disabled={!!actionLoading}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-rose-300 bg-rose-50 hover:bg-rose-100 text-rose-800 rounded-lg text-xs font-medium shadow-xs disabled:opacity-50"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-rose-300 bg-rose-50 hover:bg-rose-100 text-rose-800 rounded-lg text-xs font-medium shadow-xs focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-600 disabled:opacity-50"
                 >
                   <AlertTriangle className="w-3.5 h-3.5 text-rose-600" />
                   Request Changes
@@ -701,7 +721,7 @@ export function SubmissionWorkspace({
                       ? `Cannot approve: ${highPendingCount} high severity finding(s) remain open`
                       : undefined
                   }
-                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold shadow-xs disabled:opacity-50 disabled:cursor-not-allowed transition"
+                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold shadow-xs focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed transition"
                 >
                   {actionLoading === "approve" ? (
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -725,22 +745,36 @@ export function SubmissionWorkspace({
 
         {/* Request Changes Modal/Box */}
         {isRequestingChanges && (
-          <div className="mt-3 p-4 bg-rose-50 border border-rose-200 rounded-lg space-y-3">
-            <h4 className="text-xs font-bold uppercase text-rose-900 tracking-wide">
+          <div
+            role="region"
+            aria-label="Request Changes Feedback Form"
+            onKeyDown={(e) => {
+              if (e.key === "Escape") {
+                setIsRequestingChanges(false);
+              }
+            }}
+            className="mt-3 p-4 bg-rose-50 border border-rose-200 rounded-lg space-y-3"
+          >
+            <label
+              htmlFor="request-changes-comment"
+              className="block text-xs font-bold uppercase text-rose-900 tracking-wide"
+            >
               Mandatory Feedback for Creator
-            </h4>
+            </label>
             <textarea
+              id="request-changes-comment"
               rows={3}
               value={changesComment}
               onChange={(e) => setChangesComment(e.target.value)}
               placeholder="Explain required changes before this copy can be approved..."
               className="w-full p-2.5 bg-white border border-rose-300 rounded text-xs focus:ring-2 focus:ring-rose-500 focus:outline-none"
+              autoFocus
             />
             <div className="flex justify-end gap-2">
               <button
                 type="button"
                 onClick={() => setIsRequestingChanges(false)}
-                className="px-3 py-1 bg-white border border-slate-300 rounded text-xs text-slate-700 hover:bg-slate-50"
+                className="px-3 py-1 bg-white border border-slate-300 rounded text-xs text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-400"
               >
                 Cancel
               </button>
@@ -748,7 +782,7 @@ export function SubmissionWorkspace({
                 type="button"
                 onClick={handleRequestChanges}
                 disabled={actionLoading === "request-changes"}
-                className="px-3 py-1 bg-rose-600 hover:bg-rose-700 text-white rounded text-xs font-semibold shadow-xs"
+                className="px-3 py-1 bg-rose-600 hover:bg-rose-700 text-white rounded text-xs font-semibold shadow-xs focus:outline-none focus:ring-2 focus:ring-rose-600"
               >
                 {actionLoading === "request-changes" ? "Submitting..." : "Send Request & Return Draft"}
               </button>
@@ -767,7 +801,7 @@ export function SubmissionWorkspace({
                 <h2 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
                   Draft Copy
                 </h2>
-                <span className="text-[11px] text-slate-400">
+                <span className="text-[11px] text-slate-600">
                   ({submission.currentText.trim().split(/\s+/).length} words)
                 </span>
               </div>
@@ -779,7 +813,7 @@ export function SubmissionWorkspace({
                     setIsEditingDraft(!isEditingDraft);
                     setDraftEditText(submission.currentText);
                   }}
-                  className="inline-flex items-center gap-1 text-xs font-medium text-teal-700 hover:text-teal-800"
+                  className="inline-flex items-center gap-1 text-xs font-medium text-teal-700 hover:text-teal-800 focus:outline-none focus:ring-2 focus:ring-teal-600 focus:rounded"
                 >
                   <Edit2 className="w-3.5 h-3.5" />
                   {isEditingDraft ? "Cancel Edit" : "Edit Copy"}
@@ -790,21 +824,25 @@ export function SubmissionWorkspace({
             <div className="flex-1 overflow-y-auto">
               {isEditingDraft ? (
                 <div className="p-4 space-y-3 h-full flex flex-col">
+                  <label htmlFor="draft-edit-textarea" className="sr-only">
+                    Edit draft copy
+                  </label>
                   <textarea
+                    id="draft-edit-textarea"
                     rows={20}
                     value={draftEditText}
                     onChange={(e) => setDraftEditText(e.target.value)}
                     className="w-full flex-1 p-3 border border-slate-300 rounded-lg text-sm font-sans leading-relaxed focus:outline-none focus:ring-2 focus:ring-teal-500"
                   />
                   <div className="flex items-center justify-between pt-2">
-                    <span className="text-[11px] text-amber-700">
+                    <span className="text-[11px] text-amber-800">
                       * Saving will mark existing findings as stale.
                     </span>
                     <button
                       type="button"
                       onClick={handleSaveDraftText}
                       disabled={actionLoading === "save-text"}
-                      className="px-4 py-1.5 bg-teal-600 hover:bg-teal-700 text-white rounded text-xs font-semibold shadow-xs"
+                      className="px-4 py-1.5 bg-teal-600 hover:bg-teal-700 text-white rounded text-xs font-semibold shadow-xs focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-600"
                     >
                       {actionLoading === "save-text" ? "Saving..." : "Save Copy"}
                     </button>
@@ -815,17 +853,17 @@ export function SubmissionWorkspace({
               )}
             </div>
 
-            <div className="px-4 py-2 bg-slate-50 border-t border-slate-200 text-[11px] text-slate-500 flex items-center justify-between">
+            <div className="px-4 py-2 bg-slate-50 border-t border-slate-200 text-[11px] text-slate-600 flex items-center justify-between">
               <span>Click highlighted text to inspect rule & citation.</span>
-              <div className="flex items-center gap-2">
-                <span className="inline-flex items-center gap-1">
-                  <span className="w-2 h-2 rounded-full bg-red-500" /> High
+              <div className="flex items-center gap-3">
+                <span className="inline-flex items-center gap-1 font-medium text-slate-700">
+                  <AlertTriangle className="w-3 h-3 text-red-600 shrink-0" aria-hidden="true" /> High
                 </span>
-                <span className="inline-flex items-center gap-1">
-                  <span className="w-2 h-2 rounded-full bg-amber-500" /> Med
+                <span className="inline-flex items-center gap-1 font-medium text-slate-700">
+                  <AlertCircle className="w-3 h-3 text-amber-600 shrink-0" aria-hidden="true" /> Med
                 </span>
-                <span className="inline-flex items-center gap-1">
-                  <span className="w-2 h-2 rounded-full bg-blue-500" /> Low
+                <span className="inline-flex items-center gap-1 font-medium text-slate-700">
+                  <Info className="w-3 h-3 text-blue-600 shrink-0" aria-hidden="true" /> Low
                 </span>
               </div>
             </div>
@@ -841,10 +879,10 @@ export function SubmissionWorkspace({
                 <button
                   type="button"
                   onClick={() => setActiveTab("findings")}
-                  className={`py-3 px-1 border-b-2 text-xs font-bold inline-flex items-center gap-2 transition ${
+                  className={`py-3 px-1 border-b-2 text-xs font-bold inline-flex items-center gap-2 transition focus:outline-none focus:ring-2 focus:ring-teal-600 ${
                     activeTab === "findings"
                       ? "border-teal-600 text-teal-700"
-                      : "border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300"
+                      : "border-transparent text-slate-600 hover:text-slate-900 hover:border-slate-300"
                   }`}
                 >
                   <Layers className="w-4 h-4" />
@@ -857,10 +895,10 @@ export function SubmissionWorkspace({
                 <button
                   type="button"
                   onClick={() => setActiveTab("diff")}
-                  className={`py-3 px-1 border-b-2 text-xs font-bold inline-flex items-center gap-2 transition ${
+                  className={`py-3 px-1 border-b-2 text-xs font-bold inline-flex items-center gap-2 transition focus:outline-none focus:ring-2 focus:ring-teal-600 ${
                     activeTab === "diff"
                       ? "border-teal-600 text-teal-700"
-                      : "border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300"
+                      : "border-transparent text-slate-600 hover:text-slate-900 hover:border-slate-300"
                   }`}
                 >
                   <GitCompare className="w-4 h-4" />
@@ -870,10 +908,10 @@ export function SubmissionWorkspace({
                 <button
                   type="button"
                   onClick={() => setActiveTab("comments")}
-                  className={`py-3 px-1 border-b-2 text-xs font-bold inline-flex items-center gap-2 transition ${
+                  className={`py-3 px-1 border-b-2 text-xs font-bold inline-flex items-center gap-2 transition focus:outline-none focus:ring-2 focus:ring-teal-600 ${
                     activeTab === "comments"
                       ? "border-teal-600 text-teal-700"
-                      : "border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300"
+                      : "border-transparent text-slate-600 hover:text-slate-900 hover:border-slate-300"
                   }`}
                 >
                   <MessageSquare className="w-4 h-4" />
@@ -888,10 +926,10 @@ export function SubmissionWorkspace({
                 <button
                   type="button"
                   onClick={() => setActiveTab("history")}
-                  className={`py-3 px-1 border-b-2 text-xs font-bold inline-flex items-center gap-2 transition ${
+                  className={`py-3 px-1 border-b-2 text-xs font-bold inline-flex items-center gap-2 transition focus:outline-none focus:ring-2 focus:ring-teal-600 ${
                     activeTab === "history"
                       ? "border-teal-600 text-teal-700"
-                      : "border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300"
+                      : "border-transparent text-slate-600 hover:text-slate-900 hover:border-slate-300"
                   }`}
                 >
                   <History className="w-4 h-4" />
@@ -906,11 +944,14 @@ export function SubmissionWorkspace({
                 {/* Findings Filters & Summary Bar */}
                 <div className="p-3 bg-white border-b border-slate-200 flex flex-wrap items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
-                    <span className="text-xs text-slate-500">Filter:</span>
+                    <label htmlFor="findings-severity-filter" className="text-xs text-slate-700 font-semibold">
+                      Filter:
+                    </label>
                     <select
+                      id="findings-severity-filter"
                       value={severityFilter}
                       onChange={(e) => setSeverityFilter(e.target.value)}
-                      className="px-2 py-1 text-xs border border-slate-300 rounded bg-white"
+                      className="px-2 py-1 text-xs border border-slate-300 rounded bg-white focus:outline-none focus:ring-2 focus:ring-teal-500"
                     >
                       <option value="all">All Severities</option>
                       <option value="high">High only</option>
@@ -918,10 +959,14 @@ export function SubmissionWorkspace({
                       <option value="low">Low only</option>
                     </select>
 
+                    <label htmlFor="findings-category-filter" className="sr-only">
+                      Filter by Category
+                    </label>
                     <select
+                      id="findings-category-filter"
                       value={categoryFilter}
                       onChange={(e) => setCategoryFilter(e.target.value)}
-                      className="px-2 py-1 text-xs border border-slate-300 rounded bg-white"
+                      className="px-2 py-1 text-xs border border-slate-300 rounded bg-white focus:outline-none focus:ring-2 focus:ring-teal-500"
                     >
                       <option value="all">All Categories</option>
                       <option value="tone">Tone</option>
@@ -933,7 +978,7 @@ export function SubmissionWorkspace({
                     </select>
                   </div>
 
-                  <span className="text-xs text-slate-400">
+                  <span className="text-xs text-slate-600">
                     Showing {filteredFindings.length} of {submission.findings.length}
                   </span>
                 </div>
@@ -941,10 +986,18 @@ export function SubmissionWorkspace({
                 {/* Cards Scroll Area */}
                 <div className="flex-1 overflow-y-auto p-4 space-y-4">
                   {filteredFindings.length === 0 ? (
-                    <div className="p-8 text-center text-slate-400 space-y-2">
+                    <div className="p-8 text-center text-slate-500 space-y-2">
                       <CheckCircle2 className="w-8 h-8 text-emerald-500 mx-auto" />
-                      <p className="text-sm font-semibold text-slate-700">No findings matching filters</p>
-                      <p className="text-xs">All checks passed or filters exclude current items.</p>
+                      <p className="text-sm font-semibold text-slate-800">
+                        {submission.findings.length === 0
+                          ? "No brand findings detected"
+                          : "No findings matching filters"}
+                      </p>
+                      <p className="text-xs text-slate-600">
+                        {submission.findings.length === 0
+                          ? "Draft content conforms to all active brand rules and verified facts."
+                          : "All checks passed or filters exclude current items."}
+                      </p>
                     </div>
                   ) : (
                     filteredFindings.map((finding) => {
@@ -1038,7 +1091,7 @@ export function SubmissionWorkspace({
                                 Suggested Rewrite
                               </div>
                               <div className="flex items-baseline gap-2">
-                                <span className="text-slate-400 line-through text-[11px]">
+                                <span className="text-slate-600 line-through text-[11px]">
                                   {finding.snippet}
                                 </span>
                                 <ArrowRight className="w-3 h-3 text-teal-600 shrink-0" />
@@ -1054,19 +1107,31 @@ export function SubmissionWorkspace({
                             <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
                               {/* Edit Modal / Inline Form */}
                               {editingFindingId === finding.id ? (
-                                <div className="w-full space-y-2">
+                                <div
+                                  role="region"
+                                  aria-label="Edit suggested fix"
+                                  onKeyDown={(e) => {
+                                    if (e.key === "Escape") setEditingFindingId(null);
+                                  }}
+                                  className="w-full space-y-2"
+                                >
+                                  <label htmlFor={`custom-fix-${finding.id}`} className="sr-only">
+                                    Replacement text
+                                  </label>
                                   <input
+                                    id={`custom-fix-${finding.id}`}
                                     type="text"
                                     value={customFixText}
                                     onChange={(e) => setCustomFixText(e.target.value)}
                                     placeholder="Enter replacement text..."
-                                    className="w-full p-2 border border-slate-300 rounded text-xs"
+                                    autoFocus
+                                    className="w-full p-2 border border-slate-300 rounded text-xs focus:outline-none focus:ring-2 focus:ring-teal-500"
                                   />
                                   <div className="flex justify-end gap-2">
                                     <button
                                       type="button"
                                       onClick={() => setEditingFindingId(null)}
-                                      className="px-2.5 py-1 text-xs border border-slate-300 rounded"
+                                      className="px-2.5 py-1 text-xs border border-slate-300 rounded text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-400"
                                     >
                                       Cancel
                                     </button>
@@ -1074,26 +1139,38 @@ export function SubmissionWorkspace({
                                       type="button"
                                       onClick={() => handleEditFix(finding.id)}
                                       disabled={actionLoading === `edit-${finding.id}`}
-                                      className="px-3 py-1 text-xs bg-teal-600 text-white rounded font-medium"
+                                      className="px-3 py-1 text-xs bg-teal-600 text-white rounded font-medium hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-600 disabled:opacity-50"
                                     >
                                       Save & Apply
                                     </button>
                                   </div>
                                 </div>
                               ) : rejectingFindingId === finding.id ? (
-                                <div className="w-full space-y-2">
+                                <div
+                                  role="region"
+                                  aria-label="Reject finding"
+                                  onKeyDown={(e) => {
+                                    if (e.key === "Escape") setRejectingFindingId(null);
+                                  }}
+                                  className="w-full space-y-2"
+                                >
+                                  <label htmlFor={`reject-reason-${finding.id}`} className="sr-only">
+                                    Reason for rejecting
+                                  </label>
                                   <input
+                                    id={`reject-reason-${finding.id}`}
                                     type="text"
                                     value={rejectReason}
                                     onChange={(e) => setRejectReason(e.target.value)}
                                     placeholder="Reason for rejecting (e.g. Legal exception granted)..."
-                                    className="w-full p-2 border border-slate-300 rounded text-xs"
+                                    autoFocus
+                                    className="w-full p-2 border border-slate-300 rounded text-xs focus:outline-none focus:ring-2 focus:ring-rose-500"
                                   />
                                   <div className="flex justify-end gap-2">
                                     <button
                                       type="button"
                                       onClick={() => setRejectingFindingId(null)}
-                                      className="px-2.5 py-1 text-xs border border-slate-300 rounded"
+                                      className="px-2.5 py-1 text-xs border border-slate-300 rounded text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-400"
                                     >
                                       Cancel
                                     </button>
@@ -1101,7 +1178,7 @@ export function SubmissionWorkspace({
                                       type="button"
                                       onClick={() => handleReject(finding.id)}
                                       disabled={actionLoading === `reject-${finding.id}`}
-                                      className="px-3 py-1 text-xs bg-rose-600 text-white rounded font-medium"
+                                      className="px-3 py-1 text-xs bg-rose-600 text-white rounded font-medium hover:bg-rose-700 focus:outline-none focus:ring-2 focus:ring-rose-600 disabled:opacity-50"
                                     >
                                       Confirm Reject
                                     </button>
@@ -1115,7 +1192,7 @@ export function SubmissionWorkspace({
                                         type="button"
                                         onClick={() => handleAccept(finding.id)}
                                         disabled={!!actionLoading}
-                                        className="inline-flex items-center gap-1 px-3 py-1.5 bg-teal-600 hover:bg-teal-700 text-white rounded-md text-xs font-semibold shadow-xs disabled:opacity-50 transition"
+                                        className="inline-flex items-center gap-1 px-3 py-1.5 bg-teal-600 hover:bg-teal-700 text-white rounded-md text-xs font-semibold shadow-xs focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-600 disabled:opacity-50 transition"
                                       >
                                         {actionLoading === `accept-${finding.id}` ? (
                                           <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -1133,7 +1210,7 @@ export function SubmissionWorkspace({
                                         setCustomFixText(finding.suggestedFix || finding.snippet);
                                       }}
                                       disabled={!!actionLoading}
-                                      className="inline-flex items-center gap-1 px-2.5 py-1.5 border border-slate-300 hover:bg-slate-50 text-slate-700 rounded-md text-xs font-medium transition"
+                                      className="inline-flex items-center gap-1 px-2.5 py-1.5 border border-slate-300 hover:bg-slate-50 text-slate-700 rounded-md text-xs font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-400 transition"
                                     >
                                       <Edit2 className="w-3 h-3 text-slate-500" />
                                       Edit Fix
@@ -1147,7 +1224,7 @@ export function SubmissionWorkspace({
                                       setRejectReason("");
                                     }}
                                     disabled={!!actionLoading}
-                                    className="inline-flex items-center gap-1 px-2.5 py-1.5 text-rose-700 hover:bg-rose-50 rounded-md text-xs font-medium transition"
+                                    className="inline-flex items-center gap-1 px-2.5 py-1.5 text-rose-700 hover:bg-rose-50 rounded-md text-xs font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-600 transition"
                                   >
                                     <X className="w-3 h-3" />
                                     Reject
@@ -1174,7 +1251,7 @@ export function SubmissionWorkspace({
                                   Decision: {finding.decision.toUpperCase()}
                                 </span>
                                 {finding.rejectReason && (
-                                  <span className="text-slate-500 text-[11px] italic">
+                                  <span className="text-slate-600 text-[11px] italic">
                                     Reason: &ldquo;{finding.rejectReason}&rdquo;
                                   </span>
                                 )}
@@ -1228,7 +1305,7 @@ export function SubmissionWorkspace({
               <div className="flex-1 flex flex-col overflow-hidden">
                 <div className="flex-1 overflow-y-auto p-4 space-y-3">
                   {submission.comments.length === 0 ? (
-                    <div className="p-8 text-center text-slate-400 text-xs">
+                    <div className="p-8 text-center text-slate-600 text-xs">
                       No comments yet. Reviewers and creators can discuss revisions here.
                     </div>
                   ) : (
@@ -1241,7 +1318,7 @@ export function SubmissionWorkspace({
                           <span className="font-semibold text-slate-900">
                             {comment.author.name} ({comment.author.role})
                           </span>
-                          <span className="text-[11px] text-slate-400">
+                          <span className="text-[11px] text-slate-600">
                             {formatTimeAgo(comment.createdAt)}
                           </span>
                         </div>
@@ -1252,7 +1329,11 @@ export function SubmissionWorkspace({
                 </div>
 
                 <form onSubmit={handleAddComment} className="p-3 border-t border-slate-200 bg-white flex gap-2">
+                  <label htmlFor="new-comment-input" className="sr-only">
+                    Add feedback or discussion
+                  </label>
                   <input
+                    id="new-comment-input"
                     type="text"
                     value={newComment}
                     onChange={(e) => setNewComment(e.target.value)}
@@ -1262,7 +1343,7 @@ export function SubmissionWorkspace({
                   <button
                     type="submit"
                     disabled={!newComment.trim() || actionLoading === "comment"}
-                    className="px-3 py-1.5 bg-teal-600 text-white rounded text-xs font-semibold hover:bg-teal-700 disabled:opacity-50"
+                    className="px-3 py-1.5 bg-teal-600 text-white rounded text-xs font-semibold hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-600 disabled:opacity-50"
                   >
                     Post
                   </button>
@@ -1286,14 +1367,14 @@ export function SubmissionWorkspace({
                     >
                       <div className="flex items-center justify-between font-semibold text-slate-800">
                         <span className="font-mono text-teal-700">{log.action}</span>
-                        <span className="text-[11px] text-slate-400">
+                        <span className="text-[11px] text-slate-600">
                           {formatTimeAgo(log.createdAt)}
                         </span>
                       </div>
-                      <div className="text-[11px] text-slate-500 font-mono">
+                      <div className="text-[11px] text-slate-600 font-mono">
                         Actor: {log.actorId.substring(0, 12)}...
                       </div>
-                      <div className="text-[10px] font-mono text-slate-400 truncate">
+                      <div className="text-[10px] font-mono text-slate-600 truncate">
                         Hash: {log.hash}
                       </div>
                     </div>

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { diffWordsWithSpace, diffLines } from "diff";
 import { db } from "@/lib/db";
-import { requireRole } from "@/lib/guards";
+import { requireRole, assertCanViewSubmission } from "@/lib/guards";
 
 export const runtime = "nodejs";
 
@@ -16,18 +16,17 @@ export async function GET(
   const { id } = await params;
 
   try {
-    const isRestrictedCreator = user.role === "creator";
-
     const submission = await db.submission.findFirst({
       where: {
         id,
         workspaceId: user.workspaceId,
-        ...(isRestrictedCreator ? { creatorId: user.id } : {}),
       },
       select: {
         id: true,
         title: true,
         status: true,
+        creatorId: true,
+        workspaceId: true,
         originalText: true,
         currentText: true,
       },
@@ -36,6 +35,9 @@ export async function GET(
     if (!submission) {
       return NextResponse.json({ error: "Submission not found or access denied." }, { status: 404 });
     }
+
+    const authError = assertCanViewSubmission(user, submission);
+    if (authError) return authError;
 
     const wordDiff = diffWordsWithSpace(submission.originalText, submission.currentText);
     const lineDiff = diffLines(submission.originalText, submission.currentText);

@@ -2,6 +2,7 @@ import React from "react";
 import { notFound, redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { canViewSubmission } from "@/lib/guards";
 import { SubmissionWorkspace } from "./SubmissionWorkspace";
 
 export const runtime = "nodejs";
@@ -41,12 +42,7 @@ export default async function SubmissionPage({ params }: PageProps) {
     },
   });
 
-  if (!submission || submission.workspaceId !== user.workspaceId) {
-    notFound();
-  }
-
-  // Authorization: creators can only view their own submissions
-  if (user.role === "creator" && submission.creatorId !== user.id) {
+  if (!submission || !canViewSubmission(user, submission)) {
     notFound();
   }
 

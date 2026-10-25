@@ -67,8 +67,8 @@ export function verifyChainEntries(entries: Array<{
   payload: unknown;
   prevHash: string | null;
   hash: string;
-}>): { intact: boolean; brokenId?: string; reason?: string } {
-  let expectedPrevHash: string | null = null;
+}>, initialPrevHash: string | null = null): { intact: boolean; brokenId?: string; reason?: string; lastHash?: string | null } {
+  let expectedPrevHash: string | null = initialPrevHash;
 
   for (const entry of entries) {
     if (entry.prevHash !== expectedPrevHash) {
@@ -100,7 +100,7 @@ export function verifyChainEntries(entries: Array<{
     expectedPrevHash = entry.hash;
   }
 
-  return { intact: true };
+  return { intact: true, lastHash: expectedPrevHash };
 }
 
 /**
@@ -159,10 +159,23 @@ export async function verifyChain(
   client: PrismaClient | Prisma.TransactionClient,
   workspaceId: string
 ): Promise<{ intact: boolean; brokenId?: string; reason?: string }> {
-  const entries = await client.auditLog.findMany({
-    where: { workspaceId },
-    orderBy: [{ createdAt: "asc" }, { id: "asc" }],
-  });
+  const batchSize = 1_000;
+  let cursor: { id: string } | undefined;
+  let previousHash: string | null = null;
 
-  return verifyChainEntries(entries);
+  while (true) {
+    const entries = await client.auditLog.findMany({
+      where: { workspaceId },
+      orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+      take: batchSize,
+      ...(cursor ? { cursor, skip: 1 } : {}),
+    });
+    if (entries.length === 0) return { intact: true };
+
+    const result = verifyChainEntries(entries, previousHash);
+    if (!result.intact) return result;
+    previousHash = result.lastHash ?? previousHash;
+    cursor = { id: entries[entries.length - 1].id };
+    if (entries.length < batchSize) return { intact: true };
+  }
 }

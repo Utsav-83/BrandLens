@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { requireRole, assertSameOrigin } from "@/lib/guards";
+import { requireRole, assertSameOrigin, assertCanViewSubmission } from "@/lib/guards";
 import { appendAudit } from "@/lib/audit";
 
 export const runtime = "nodejs";
@@ -22,20 +22,20 @@ export async function GET(
   const { id } = await params;
 
   try {
-    const isRestrictedCreator = user.role === "creator";
-
     const submission = await db.submission.findFirst({
       where: {
         id,
         workspaceId: user.workspaceId,
-        ...(isRestrictedCreator ? { creatorId: user.id } : {}),
       },
-      select: { id: true },
+      select: { id: true, creatorId: true, workspaceId: true, status: true },
     });
 
     if (!submission) {
       return NextResponse.json({ error: "Submission not found or access denied." }, { status: 404 });
     }
+
+    const authError = assertCanViewSubmission(user, submission);
+    if (authError) return authError;
 
     const comments = await db.comment.findMany({
       where: { submissionId: id },
@@ -78,18 +78,20 @@ export async function POST(
       );
     }
 
-    const isRestrictedCreator = user.role === "creator";
-
     const comment = await db.$transaction(async (tx) => {
       const submission = await tx.submission.findFirst({
         where: {
           id,
           workspaceId: user.workspaceId,
-          ...(isRestrictedCreator ? { creatorId: user.id } : {}),
         },
       });
 
       if (!submission) {
+        throw new Error("NOT_FOUND");
+      }
+
+      const authError = assertCanViewSubmission(user, submission);
+      if (authError) {
         throw new Error("NOT_FOUND");
       }
 

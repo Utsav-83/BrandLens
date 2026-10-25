@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireRole, assertSameOrigin } from "@/lib/guards";
+import { checkRateLimit } from "@/lib/ratelimit";
 import {
   parseUploadedDocument,
   ScannedPdfError,
@@ -17,6 +18,25 @@ export async function POST(request: Request) {
 
   const guard = await requireRole("creator", "admin");
   if (guard.error) return guard.error;
+  const user = guard.user;
+
+  // Rate limit: 20 uploads per 10 minutes per user
+  const rateLimit = await checkRateLimit(`upload:${user.id}`, 20, 600);
+  if (!rateLimit.allowed) {
+    const retryAfter = Math.max(1, Math.ceil((rateLimit.resetTime.getTime() - Date.now()) / 1000));
+    return NextResponse.json(
+      {
+        error: "Upload rate limit exceeded. You can perform 20 uploads per 10 minutes.",
+        resetTime: rateLimit.resetTime.toISOString(),
+      },
+      {
+        status: 429,
+        headers: {
+          "Retry-After": String(retryAfter),
+        },
+      }
+    );
+  }
 
   try {
     const formData = await request.formData();

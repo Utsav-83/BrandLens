@@ -24,7 +24,7 @@ export default function ErrorBoundary({
 
         <div>
           <h2 className="text-lg font-bold text-slate-900">Something went wrong</h2>
-          <p className="text-xs text-slate-500 mt-1">
+          <p className="text-xs text-slate-600 mt-1">
             {error.message || "An unexpected error occurred while rendering this page."}
           </p>
         </div>
@@ -33,14 +33,14 @@ export default function ErrorBoundary({
           <button
             type="button"
             onClick={() => reset()}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-xs font-semibold shadow-xs transition"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-xs font-semibold shadow-xs focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-600 transition"
           >
             <RefreshCw className="w-3.5 h-3.5" />
             Try Again
           </button>
           <Link
             href="/"
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 border border-slate-300 rounded-lg text-xs font-medium text-slate-700 hover:bg-slate-50 shadow-xs transition"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 border border-slate-300 rounded-lg text-xs font-medium text-slate-700 hover:bg-slate-50 shadow-xs focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-400 transition"
           >
             <Home className="w-3.5 h-3.5" />
             Return Home

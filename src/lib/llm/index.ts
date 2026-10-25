@@ -80,13 +80,15 @@ export class ProviderNeutralLLMClient implements LLMClient {
   }
 
   isAvailable(): boolean {
-    if (this.provider === "none" || !this.provider) return false;
-    if (!this.apiKey) return false;
+    const validProviders = ["gemini", "openai", "anthropic", "groq"];
+    if (!validProviders.includes(this.provider)) return false;
+    if (!this.apiKey || !this.apiKey.trim()) return false;
+    if (!this.model || !this.model.trim()) return false;
     return true;
   }
 
   getModelName(): string {
-    return this.model || `${this.provider}-default`;
+    return this.model || "";
   }
 
   async completeJson(systemPrompt: string, userPrompt: string): Promise<Record<string, unknown>> {
@@ -133,7 +135,7 @@ export class ProviderNeutralLLMClient implements LLMClient {
   }
 
   private async callGemini(systemPrompt: string, userPrompt: string, signal: AbortSignal): Promise<string> {
-    const model = this.model || "gemini-1.5-flash";
+    const model = this.model;
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${this.apiKey}`;
 
     const res = await fetch(url, {
@@ -176,7 +178,7 @@ export class ProviderNeutralLLMClient implements LLMClient {
     signal: AbortSignal,
     endpoint: string
   ): Promise<string> {
-    const model = this.model || (this.provider === "groq" ? "llama-3.3-70b-versatile" : "gpt-4o-mini");
+    const model = this.model;
 
     const res = await fetch(endpoint, {
       method: "POST",
@@ -210,7 +212,7 @@ export class ProviderNeutralLLMClient implements LLMClient {
   }
 
   private async callAnthropic(systemPrompt: string, userPrompt: string, signal: AbortSignal): Promise<string> {
-    const model = this.model || "claude-3-5-sonnet-20241022";
+    const model = this.model;
     const url = "https://api.anthropic.com/v1/messages";
 
     const res = await fetch(url, {

@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { requireRole, assertSameOrigin } from "@/lib/guards";
-import { validateRequestChanges } from "@/lib/workflow";
+import { requireRole, assertSameOrigin, assertCanReview } from "@/lib/guards";
 import { appendAudit } from "@/lib/audit";
 
 export const runtime = "nodejs";
@@ -48,11 +47,21 @@ export async function POST(
         throw new Error("NOT_FOUND");
       }
 
-      const validation = validateRequestChanges(submission, user.id, user.role, comment);
-      if (!validation.allowed) {
+      const reviewError = assertCanReview(user, submission);
+      if (reviewError) {
+        const errorJson = (await reviewError.json()) as { error: string };
         return {
           allowed: false,
-          reason: validation.reason,
+          status: reviewError.status,
+          reason: errorJson.error,
+        };
+      }
+
+      if (!comment || !comment.trim()) {
+        return {
+          allowed: false,
+          status: 400,
+          reason: "A comment detailing the requested revisions is mandatory.",
         };
       }
 
@@ -94,7 +103,7 @@ export async function POST(
     });
 
     if (!result.allowed) {
-      return NextResponse.json({ error: result.reason }, { status: 403 });
+      return NextResponse.json({ error: result.reason }, { status: result.status || 403 });
     }
 
     return NextResponse.json({

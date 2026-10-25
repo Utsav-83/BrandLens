@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { requireRole, assertSameOrigin } from "@/lib/guards";
+import { requireRole, assertSameOrigin, assertCanEditSubmission } from "@/lib/guards";
+import { idParamSchema } from "@/lib/validation";
 import { validateSubmitForReview } from "@/lib/workflow";
 import { appendAudit } from "@/lib/audit";
 
@@ -18,6 +19,13 @@ export async function POST(
   const user = guard.user;
 
   const { id } = await params;
+  const parsedId = idParamSchema.safeParse(id);
+  if (!parsedId.success) {
+    return NextResponse.json(
+      { error: "Invalid ID parameter. Must be a valid UUID." },
+      { status: 400 }
+    );
+  }
 
   try {
     const result = await db.$transaction(async (tx) => {
@@ -25,7 +33,6 @@ export async function POST(
         where: {
           id,
           workspaceId: user.workspaceId,
-          ...(user.role === "creator" ? { creatorId: user.id } : {}),
         },
         include: {
           findings: true,
@@ -33,6 +40,11 @@ export async function POST(
       });
 
       if (!submission) {
+        throw new Error("NOT_FOUND");
+      }
+
+      const authError = assertCanEditSubmission(user, submission);
+      if (authError) {
         throw new Error("NOT_FOUND");
       }
 

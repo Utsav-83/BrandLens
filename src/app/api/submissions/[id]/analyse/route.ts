@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { requireRole, assertSameOrigin } from "@/lib/guards";
+import { requireRole, assertSameOrigin, assertCanEditSubmission } from "@/lib/guards";
+import { idParamSchema } from "@/lib/validation";
 import { checkRateLimit } from "@/lib/ratelimit";
 import { analyzeDraft } from "@/lib/review";
 import { appendAudit } from "@/lib/audit";
@@ -21,6 +22,13 @@ export async function POST(
   const user = guard.user;
 
   const { id } = await params;
+  const parsedId = idParamSchema.safeParse(id);
+  if (!parsedId.success) {
+    return NextResponse.json(
+      { error: "Invalid ID parameter. Must be a valid UUID." },
+      { status: 400 }
+    );
+  }
 
   // DB-based rate limit: 10 analyses per user per 10 minutes (600s)
   const rateLimitKey = `analyse:${user.id}`;
@@ -46,7 +54,6 @@ export async function POST(
       where: {
         id,
         workspaceId: user.workspaceId,
-        ...(user.role === "creator" ? { creatorId: user.id } : {}),
       },
     });
 
@@ -56,6 +63,9 @@ export async function POST(
         { status: 404 }
       );
     }
+
+    const authError = assertCanEditSubmission(user, submission);
+    if (authError) return authError;
 
     // 2. Call the analysis engine OUTSIDE of the DB transaction
     // (Rules first, AI second, citation validation)
