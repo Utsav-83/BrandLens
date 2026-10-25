@@ -92,7 +92,10 @@ export function NewSubmissionForm() {
         throw new Error(data.error || "Failed to create submission");
       }
 
-      const submissionId = data.id;
+      const submissionId = data.submission?.id;
+      if (typeof submissionId !== "string" || !submissionId) {
+        throw new Error("Submission was created, but the server did not return its ID.");
+      }
 
       // 2. If user clicked "Analyse Now", trigger analysis immediately
       if (shouldAnalyse) {

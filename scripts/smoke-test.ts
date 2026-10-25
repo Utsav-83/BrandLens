@@ -29,14 +29,15 @@ interface SmokeFinding {
 }
 
 interface SmokeApiResponse {
-  id?: string;
-  count?: number;
+  intact?: boolean;
+  totalEntries?: number;
   aiStatus?: string;
   error?: string;
-  valid?: boolean;
-  brokenAtId?: string;
+  brokenId?: string | null;
+  findings?: SmokeFinding[];
   user?: { role: string; email: string };
   submission?: {
+    id?: string;
     findings?: SmokeFinding[];
   };
   [key: string]: unknown;
@@ -179,8 +180,8 @@ async function main() {
         text: SAMPLE_FLAWED_CONTENT,
       }),
     });
-    if (res.ok && data?.id) {
-      submissionId = data.id;
+    if (res.ok && data?.submission?.id) {
+      submissionId = data.submission.id;
       return { passed: true, message: `Submission created with ID: ${submissionId}` };
     }
     return { passed: false, message: data?.error || `HTTP ${res.status}` };
@@ -192,10 +193,10 @@ async function main() {
     const { res, data } = await request(`/api/submissions/${submissionId}/analyse`, {
       method: "POST",
     });
-    if (res.ok && typeof data?.count === "number") {
+    if (res.ok && Array.isArray(data?.findings)) {
       return {
         passed: true,
-        message: `Identified ${data.count} finding(s) (aiStatus: ${data.aiStatus || "ok"})`,
+        message: `Identified ${data.findings.length} finding(s) (aiStatus: ${data.aiStatus || "ok"})`,
       };
     }
     return { passed: false, message: data?.error || `HTTP ${res.status}` };
@@ -231,8 +232,15 @@ async function main() {
 
   // Step 6: Submit for Review
   await runStep("6. Submit Draft for Review", async () => {
-    // If there are pending HIGH findings, state machine legally blocks submission.
-    // Let's check remaining findings:
+    // Accepting a fix changes the copy and marks previous findings stale.
+    // Re-run analysis so the state machine can evaluate current findings.
+    const analysis = await request(`/api/submissions/${submissionId}/analyse`, {
+      method: "POST",
+    });
+    if (!analysis.res.ok) {
+      return { passed: false, message: analysis.data?.error || `Analysis HTTP ${analysis.res.status}` };
+    }
+
     const { data } = await request(`/api/submissions/${submissionId}`);
     const highPending = (data?.submission?.findings || []).filter(
       (f: SmokeFinding) => f.decision === "pending" && f.severity === "high"
@@ -296,15 +304,15 @@ async function main() {
   // Step 10: Cryptographic Audit Verification
   await runStep("10. Verify SHA-256 Audit Chain Integrity", async () => {
     const { res, data } = await request("/api/audit/verify");
-    if (res.ok && data?.valid === true) {
+    if (res.ok && data?.intact === true) {
       return {
         passed: true,
-        message: `Cryptographic audit chain intact (${data.count} chained records verified)`,
+        message: `Cryptographic audit chain intact (${data.totalEntries} chained records verified)`,
       };
     }
     return {
       passed: false,
-      message: data?.valid === false ? `Broken chain at ${data.brokenAtId}` : `HTTP ${res.status}`,
+      message: data?.intact === false ? `Broken chain at ${data.brokenId || "unknown entry"}` : `HTTP ${res.status}`,
     };
   });
 

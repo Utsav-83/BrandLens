@@ -191,8 +191,9 @@ export function SubmissionWorkspace({
       if (!res.ok) {
         throw new Error(data.error || "Analysis failed");
       }
-      setActionSuccess(`Analysis complete! Identified ${data.count} finding(s).`);
-      toast.success(`Identified ${data.count} finding(s).`, "Analysis Complete");
+      const findingCount = Array.isArray(data.findings) ? data.findings.length : 0;
+      setActionSuccess(`Analysis complete! Identified ${findingCount} finding(s).`);
+      toast.success(`Identified ${findingCount} finding(s).`, "Analysis Complete");
       await refreshData();
       router.refresh();
     } catch (err: unknown) {
