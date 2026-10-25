@@ -11,6 +11,8 @@ import {
   Clock,
   ArrowRight,
   AlertTriangle,
+  AlertCircle,
+  Info,
   BookOpen,
 } from "lucide-react";
 import { formatTimeAgo } from "@/lib/utils";
@@ -240,21 +242,24 @@ export default async function DashboardPage() {
 
                       <td className="px-6 py-4 whitespace-nowrap">
                         {pendingFindings.length === 0 ? (
-                          <span className="text-xs text-slate-400">0 open issues</span>
+                          <span className="text-xs text-slate-600">0 open issues</span>
                         ) : (
                           <div className="flex items-center gap-1.5">
                             {highPending > 0 && (
-                              <span className="px-1.5 py-0.5 rounded text-xs font-bold bg-red-100 text-red-700">
+                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-bold bg-red-100 text-red-800">
+                                <AlertTriangle className="w-3 h-3 shrink-0 text-red-700" aria-hidden="true" />
                                 {highPending} High
                               </span>
                             )}
                             {medPending > 0 && (
-                              <span className="px-1.5 py-0.5 rounded text-xs font-semibold bg-amber-100 text-amber-800">
+                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-semibold bg-amber-100 text-amber-900">
+                                <AlertCircle className="w-3 h-3 shrink-0 text-amber-700" aria-hidden="true" />
                                 {medPending} Med
                               </span>
                             )}
                             {lowPending > 0 && (
-                              <span className="px-1.5 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-700">
+                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-900">
+                                <Info className="w-3 h-3 shrink-0 text-blue-700" aria-hidden="true" />
                                 {lowPending} Low
                               </span>
                             )}
@@ -266,14 +271,14 @@ export default async function DashboardPage() {
                         {sub.creator.name}
                       </td>
 
-                      <td className="px-6 py-4 whitespace-nowrap text-xs text-slate-500">
+                      <td className="px-6 py-4 whitespace-nowrap text-xs text-slate-600">
                         {formatTimeAgo(sub.updatedAt)}
                       </td>
 
                       <td className="px-6 py-4 whitespace-nowrap text-right">
                         <Link
                           href={`/submissions/${sub.id}`}
-                          className="inline-flex items-center gap-1 text-xs font-semibold text-teal-600 hover:text-teal-700"
+                          className="inline-flex items-center gap-1 text-xs font-semibold text-teal-600 hover:text-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-600 focus:rounded"
                         >
                           Open Review
                           <ArrowRight className="w-3.5 h-3.5" />

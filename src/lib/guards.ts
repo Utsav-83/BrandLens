@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser, AuthenticatedUser } from "./auth";
-import { Role } from "@/generated/prisma";
+import { Role, SubmissionStatus } from "@/generated/prisma";
 
 export interface GuardSuccess {
   error: null;
@@ -18,7 +18,9 @@ export type GuardResult = GuardSuccess | GuardFailure;
  * Enforces role-based access control on Route Handlers.
  * Returns either { user, error: null } or { user: null, error: NextResponse }
  */
-export async function requireRole(...allowedRoles: Role[]): Promise<GuardResult> {
+export async function requireRole(
+  ...allowedRoles: (Role | Role[])[]
+): Promise<GuardResult> {
   const user = await getCurrentUser();
 
   if (!user) {
@@ -31,11 +33,12 @@ export async function requireRole(...allowedRoles: Role[]): Promise<GuardResult>
     };
   }
 
-  if (allowedRoles.length > 0 && !allowedRoles.includes(user.role)) {
+  const flattenedRoles = allowedRoles.flat() as Role[];
+  if (flattenedRoles.length > 0 && !flattenedRoles.includes(user.role)) {
     return {
       error: NextResponse.json(
         {
-          error: `Forbidden: role '${user.role}' lacks permission for this action. Allowed: ${allowedRoles.join(", ")}`,
+          error: `Forbidden: role '${user.role}' lacks permission for this action. Allowed: ${flattenedRoles.join(", ")}`,
         },
         { status: 403 }
       ),
@@ -80,6 +83,133 @@ export function assertSameOrigin(request: Request): NextResponse | null {
   } catch {
     return NextResponse.json(
       { error: "Forbidden: Invalid Origin header" },
+      { status: 403 }
+    );
+  }
+
+  return null;
+}
+
+export const REVIEWABLE_STATUSES: readonly SubmissionStatus[] = [
+  "in_review",
+  "approved",
+  "changes_requested",
+] as const;
+
+export interface SubmissionAuthTarget {
+  creatorId: string;
+  workspaceId: string;
+  status: SubmissionStatus;
+}
+
+/**
+ * Checks whether an authenticated user is permitted to view a submission:
+ * - Admin: can view any submission in their workspace.
+ * - Creator: can only view submissions where creatorId === user.id.
+ * - Manager / Reviewer: can only view submissions with review-related status
+ *   ("in_review", "approved", "changes_requested").
+ * Returns false if workspaceId does not match.
+ */
+export function canViewSubmission(
+  user: AuthenticatedUser,
+  submission: SubmissionAuthTarget
+): boolean {
+  if (submission.workspaceId !== user.workspaceId) return false;
+  if (user.role === "admin") return true;
+  if (user.role === "creator") return submission.creatorId === user.id;
+  if (user.role === "manager" || user.role === "reviewer") {
+    return (REVIEWABLE_STATUSES as readonly string[]).includes(submission.status);
+  }
+  return false;
+}
+
+/**
+ * Asserts user can view submission. Returns 404 (not 403) to prevent existence leakage.
+ */
+export function assertCanViewSubmission(
+  user: AuthenticatedUser,
+  submission: SubmissionAuthTarget
+): NextResponse | null {
+  if (!canViewSubmission(user, submission)) {
+    return NextResponse.json(
+      { error: "Submission not found or access denied." },
+      { status: 404 }
+    );
+  }
+  return null;
+}
+
+/**
+ * Checks whether an authenticated user is permitted to edit a submission
+ * (edit text, analyse, accept/edit/reject findings, submit for review):
+ * - Admin: can edit any submission in their workspace.
+ * - Creator: can only edit submissions where creatorId === user.id.
+ * - Manager / Reviewer / Others: false.
+ */
+export function canEditSubmission(
+  user: AuthenticatedUser,
+  submission: Pick<SubmissionAuthTarget, "creatorId" | "workspaceId">
+): boolean {
+  if (submission.workspaceId !== user.workspaceId) return false;
+  if (user.role === "admin") return true;
+  if (user.role === "creator") return submission.creatorId === user.id;
+  return false;
+}
+
+/**
+ * Asserts user can edit submission. Returns 404 (not 403) to prevent existence leakage.
+ */
+export function assertCanEditSubmission(
+  user: AuthenticatedUser,
+  submission: Pick<SubmissionAuthTarget, "creatorId" | "workspaceId">
+): NextResponse | null {
+  if (!canEditSubmission(user, submission)) {
+    return NextResponse.json(
+      { error: "Submission not found or access denied." },
+      { status: 404 }
+    );
+  }
+  return null;
+}
+
+/**
+ * Asserts user can review a submission (approve or request changes):
+ * - Must belong to user's workspace (404).
+ * - Role must be manager, reviewer, or admin (403).
+ * - Separation of duties: a user must not approve or request changes on a submission
+ *   they created, even if they are admin (403 with clear message).
+ * - Status must be 'in_review' (403 with clear message).
+ */
+export function assertCanReview(
+  user: AuthenticatedUser,
+  submission: SubmissionAuthTarget
+): NextResponse | null {
+  if (submission.workspaceId !== user.workspaceId) {
+    return NextResponse.json(
+      { error: "Submission not found or access denied." },
+      { status: 404 }
+    );
+  }
+
+  const allowedRoles: Role[] = ["manager", "reviewer", "admin"];
+  if (!allowedRoles.includes(user.role)) {
+    return NextResponse.json(
+      { error: `Forbidden: role '${user.role}' lacks permission to review submissions.` },
+      { status: 403 }
+    );
+  }
+
+  // Separation of duties: creators cannot review their own submissions, even if admin
+  if (submission.creatorId === user.id) {
+    return NextResponse.json(
+      { error: "Separation of duties violation: Users cannot approve or request changes on their own submissions." },
+      { status: 403 }
+    );
+  }
+
+  if (submission.status !== "in_review") {
+    return NextResponse.json(
+      { error: `Cannot review submission in '${submission.status}' status. Submission must be 'in_review'.` },
       { status: 403 }
     );
   }

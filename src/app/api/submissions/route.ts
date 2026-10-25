@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { requireRole, assertSameOrigin } from "@/lib/guards";
+import { requireRole, assertSameOrigin, REVIEWABLE_STATUSES } from "@/lib/guards";
 import { appendAudit } from "@/lib/audit";
 import { Channel, SubmissionStatus } from "@/generated/prisma";
 
@@ -25,12 +25,24 @@ export async function GET(request: Request) {
 
   try {
     const isRestrictedCreator = user.role === "creator";
+    const isReviewerOrManager = user.role === "manager" || user.role === "reviewer";
+
+    let effectiveStatusFilter: SubmissionStatus | { in: SubmissionStatus[] } | undefined = undefined;
+    if (isReviewerOrManager) {
+      if (statusFilter && (REVIEWABLE_STATUSES as readonly string[]).includes(statusFilter)) {
+        effectiveStatusFilter = statusFilter;
+      } else {
+        effectiveStatusFilter = { in: [...REVIEWABLE_STATUSES] };
+      }
+    } else if (statusFilter) {
+      effectiveStatusFilter = statusFilter;
+    }
 
     const submissions = await db.submission.findMany({
       where: {
         workspaceId: user.workspaceId,
         ...(isRestrictedCreator ? { creatorId: user.id } : {}),
-        ...(statusFilter ? { status: statusFilter } : {}),
+        ...(effectiveStatusFilter ? { status: effectiveStatusFilter } : {}),
         ...(channelFilter ? { channel: channelFilter } : {}),
       },
       include: {

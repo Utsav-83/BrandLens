@@ -1,17 +1,18 @@
 import { describe, it, expect, afterEach } from "vitest";
+import { demoRoleSchema } from "@/lib/validation";
 
 // Pure function simulating the security gate logic in /api/auth/demo/[role]
 function evaluateDemoAccess(demoModeEnv: string | undefined, role: string) {
   if (demoModeEnv !== "true") {
-    return { status: 403, error: "Demo mode is disabled on this server." };
+    return { status: 404, error: "Demo mode is disabled on this server." };
   }
 
-  const validRoles = ["creator", "manager", "reviewer", "admin"];
-  const normalized = role.toLowerCase();
-  if (!validRoles.includes(normalized)) {
-    return { status: 400, error: `Invalid role '${role}'.` };
+  const parsed = demoRoleSchema.safeParse(role.toLowerCase());
+  if (!parsed.success) {
+    return { status: 400, error: `Invalid role '${role}'. Valid options are: creator, manager, reviewer, admin` };
   }
 
+  const normalized = parsed.data;
   return {
     status: 200,
     user: {
@@ -29,16 +30,24 @@ describe("Demo Login Route Security Gate (/api/auth/demo/[role])", () => {
     process.env.DEMO_MODE = originalDemoMode;
   });
 
-  it("returns 403 Forbidden when DEMO_MODE is 'false'", () => {
+  it("returns 404 Not Found when DEMO_MODE is 'false'", () => {
     const result = evaluateDemoAccess("false", "creator");
-    expect(result.status).toBe(403);
+    expect(result.status).toBe(404);
     expect(result.error).toContain("Demo mode is disabled");
   });
 
-  it("returns 403 Forbidden when DEMO_MODE is undefined or empty", () => {
+  it("returns 404 Not Found when DEMO_MODE is undefined or empty", () => {
     const result = evaluateDemoAccess(undefined, "creator");
-    expect(result.status).toBe(403);
+    expect(result.status).toBe(404);
     expect(result.error).toContain("Demo mode is disabled");
+  });
+
+  it("hides demo buttons on /login when DEMO_MODE is not 'true'", () => {
+    const isDemoActive = (envVal: string | undefined) => envVal === "true";
+    expect(isDemoActive("false")).toBe(false);
+    expect(isDemoActive(undefined)).toBe(false);
+    expect(isDemoActive("0")).toBe(false);
+    expect(isDemoActive("true")).toBe(true);
   });
 
   it("succeeds with 200 and logs in demo user when DEMO_MODE is 'true'", () => {

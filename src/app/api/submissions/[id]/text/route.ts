@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { requireRole, assertSameOrigin } from "@/lib/guards";
+import { requireRole, assertSameOrigin, assertCanEditSubmission } from "@/lib/guards";
 import { appendAudit } from "@/lib/audit";
 
 export const runtime = "nodejs";
@@ -43,7 +43,6 @@ export async function PATCH(
         where: {
           id,
           workspaceId: user.workspaceId,
-          ...(user.role === "creator" ? { creatorId: user.id } : {}),
         },
       });
 
@@ -51,22 +50,29 @@ export async function PATCH(
         throw new Error("NOT_FOUND");
       }
 
+      const authError = assertCanEditSubmission(user, submission);
+      if (authError) {
+        throw new Error("NOT_FOUND");
+      }
+
       if (submission.status === "approved") {
         throw new Error("READ_ONLY_APPROVED");
       }
 
-      // Mark all existing findings as stale
-      await tx.finding.updateMany({
-        where: { submissionId: id },
-        data: { stale: true },
-      });
+      const textChanged = text !== submission.currentText;
+      if (textChanged) {
+        await tx.finding.updateMany({
+          where: { submissionId: id },
+          data: { stale: true },
+        });
+      }
 
       // Update currentText and transition status back to 'draft'
       const updated = await tx.submission.update({
         where: { id },
         data: {
           currentText: text,
-          status: "draft",
+          status: textChanged ? "draft" : submission.status,
         },
       });
 
@@ -79,17 +85,19 @@ export async function PATCH(
         payload: {
           previousLength: submission.currentText.length,
           newLength: text.length,
-          findingsMarkedStale: true,
-          statusResetToDraft: true,
+          findingsMarkedStale: textChanged,
+          statusResetToDraft: textChanged,
         },
       });
 
-      return updated;
+      return { submission: updated, textChanged };
     });
 
     return NextResponse.json({
-      submission: result,
-      message: "Text updated successfully. Findings have been marked stale and require re-analysis.",
+      submission: result.submission,
+      message: result.textChanged
+        ? "Text updated successfully. Findings have been marked stale and require re-analysis."
+        : "Text is unchanged; existing findings remain valid.",
     });
   } catch (error: unknown) {
     if (error instanceof Error) {

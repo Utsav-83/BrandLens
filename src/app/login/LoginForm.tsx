@@ -93,7 +93,7 @@ export function LoginForm({ demoMode }: LoginFormProps) {
 
           {demoMode && (
             <div className="mb-6 space-y-3">
-              <p className="text-xs font-semibold tracking-wider text-slate-500 uppercase text-center">
+              <p className="text-xs font-semibold tracking-wider text-slate-600 uppercase text-center">
                 One-Click Hackathon Demo Access
               </p>
               <div className="grid grid-cols-1 gap-2.5">
@@ -102,7 +102,7 @@ export function LoginForm({ demoMode }: LoginFormProps) {
                   type="button"
                   onClick={() => handleDemoLogin("creator")}
                   disabled={!!loadingRole}
-                  className="w-full flex items-center justify-center py-3 px-4 border border-transparent rounded-lg shadow-xs text-sm font-semibold text-white bg-teal-600 hover:bg-teal-700 disabled:opacity-50 transition"
+                  className="w-full flex items-center justify-center py-3 px-4 border border-transparent rounded-lg shadow-xs text-sm font-semibold text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-600 disabled:opacity-50 transition"
                 >
                   {loadingRole === "creator" ? (
                     <span className="flex items-center gap-2">
@@ -117,7 +117,7 @@ export function LoginForm({ demoMode }: LoginFormProps) {
                   type="button"
                   onClick={() => handleDemoLogin("manager")}
                   disabled={!!loadingRole}
-                  className="w-full flex items-center justify-center py-3 px-4 border border-transparent rounded-lg shadow-xs text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 transition"
+                  className="w-full flex items-center justify-center py-3 px-4 border border-transparent rounded-lg shadow-xs text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-600 disabled:opacity-50 transition"
                 >
                   {loadingRole === "manager" ? (
                     <span className="flex items-center gap-2">
@@ -132,7 +132,7 @@ export function LoginForm({ demoMode }: LoginFormProps) {
                   type="button"
                   onClick={() => handleDemoLogin("reviewer")}
                   disabled={!!loadingRole}
-                  className="w-full flex items-center justify-center py-3 px-4 border border-transparent rounded-lg shadow-xs text-sm font-semibold text-white bg-sky-600 hover:bg-sky-700 disabled:opacity-50 transition"
+                  className="w-full flex items-center justify-center py-3 px-4 border border-transparent rounded-lg shadow-xs text-sm font-semibold text-white bg-sky-600 hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-600 disabled:opacity-50 transition"
                 >
                   {loadingRole === "reviewer" ? (
                     <span className="flex items-center gap-2">
@@ -149,7 +149,7 @@ export function LoginForm({ demoMode }: LoginFormProps) {
                     type="button"
                     onClick={() => handleDemoLogin("admin")}
                     disabled={!!loadingRole}
-                    className="inline-flex items-center justify-center px-3 py-1.5 border border-slate-300 rounded-md text-xs font-medium text-slate-700 bg-white hover:bg-slate-50 disabled:opacity-50 transition"
+                    className="inline-flex items-center justify-center px-3 py-1.5 border border-slate-300 rounded-md text-xs font-medium text-slate-700 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-400 disabled:opacity-50 transition"
                   >
                     {loadingRole === "admin" ? "Logging in..." : "Continue as Admin"}
                   </button>
@@ -161,7 +161,7 @@ export function LoginForm({ demoMode }: LoginFormProps) {
                   <div className="w-full border-t border-slate-200" />
                 </div>
                 <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-white px-2 text-slate-500 font-medium">Or sign in with email</span>
+                  <span className="bg-white px-2 text-slate-600 font-medium">Or sign in with email</span>
                 </div>
               </div>
             </div>
@@ -201,7 +201,7 @@ export function LoginForm({ demoMode }: LoginFormProps) {
             <button
               type="submit"
               disabled={!!loadingRole}
-              className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-xs text-sm font-semibold text-white bg-slate-900 hover:bg-slate-800 disabled:opacity-50 transition"
+              className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-xs text-sm font-semibold text-white bg-slate-900 hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 disabled:opacity-50 transition"
             >
               {loadingRole === "form" ? "Signing in..." : "Sign In"}
             </button>

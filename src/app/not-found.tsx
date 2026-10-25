@@ -12,7 +12,7 @@ export default function NotFound() {
 
         <div>
           <h2 className="text-xl font-bold text-slate-900">Page Not Found</h2>
-          <p className="text-xs text-slate-500 mt-1">
+          <p className="text-xs text-slate-600 mt-1">
             The submission or resource you requested could not be located, or you do not have permission to view it.
           </p>
         </div>
@@ -20,7 +20,7 @@ export default function NotFound() {
         <div className="pt-2">
           <Link
             href="/"
-            className="inline-flex items-center gap-2 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-xs font-semibold shadow-xs transition"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-xs font-semibold shadow-xs focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-600 transition"
           >
             <Home className="w-4 h-4" />
             Back to Dashboard

@@ -19,8 +19,8 @@ Deterministic Checks (1.0 conf)  +  Tone & Semantic Claims  +  Accept / Edit / R
 ```
 
 ### Links & Access
-- **Live Deployed App**: `https://brandlens-production.up.railway.app` (or Vercel deployment link)
-- **GitHub Repository**: `https://github.com/SRUJANMMATTUR/Brandlens`
+- **Working Project Link**: Pending a verified deployment. Do not submit the earlier Railway URL as live.
+- **GitHub Repository**: `https://github.com/Utsav-83/BrandLens`
 - **Demo Workspace**: "Aurora Pay" (Fictional Fintech Brand)
 
 ### Pre-Seeded 1-Click Demo Accounts (Password: `AuroraDemo2026!`)
@@ -103,7 +103,7 @@ Deterministic Checks (1.0 conf)  +  Tone & Semantic Claims  +  Accept / Edit / R
 - **Authentication**: `jose` 6.2.13 (HS256 JWT in HttpOnly cookies), `bcryptjs` 3.0.3, Same-Origin CSRF validation
 - **Parsing & Diffing**: `mammoth` 1.13.0 (DOCX), `unpdf` 1.9.1 (PDF magic-bytes), `diff` 9.0.0 (word-level diff)
 - **UI & Styling**: Tailwind CSS 4.0.9, Lucide React icons, WCAG AA 4.5:1 contrast
-- **Test Suite**: Vitest 3.2.7 — **92 tests passing across 10 suites** (zero failures)
+- **Test Suite**: Vitest 3.2.7 — **290 tests passed, 1 skipped** in the latest local run; production build and hosted smoke test still need verification.
 
 ### 6 Core Reliability & Enterprise Safety Measures
 1. **Zero-Crash Fallback Mode**: If `LLM_API_KEY` is missing, invalid, or times out (20s `AbortController`), BrandLens never throws 500. It degrades smoothly to rules-only mode with a visible amber banner (`AI review unavailable, rules-only results`).
@@ -160,9 +160,9 @@ Deterministic Checks (1.0 conf)  +  Tone & Semantic Claims  +  Accept / Edit / R
 | **Deterministic Rules** | Conceptual idea | 6 production-grade pure rules with 100% offset accuracy |
 | **Hallucination Defense** | Prompt engineering only | Multi-step citation validator: drops unverified quotes & fabricated numbers |
 | **Audit Ledger** | Standard timestamped DB rows | SHA-256 hash chain with advisory lock and instant UI verification badge |
-| **Test Coverage** | 0 tests | **92 unit & integration tests passing across 10 test suites** |
+| **Test Coverage** | 0 tests | **290 passing, 1 skipped in latest local suite; live Postgres concurrency test requires a test database** |
 | **Judge Usability** | Manual registration & setup | 1-click demo logins for 4 personas, pre-seeded Aurora Pay workspace |
-| **Deployment** | Not deployed | Vercel + Neon serverless ready with automated smoke test script |
+| **Deployment** | Not deployed | Vercel + Neon deployment path documented with an automated smoke test script; production deployment not yet verified |
 
 ### Honest Limitations & Current Scope
 1. **Scanned PDF Documents**: PDF parsing handles digital text streams via `unpdf`. Image-only scanned PDFs trigger a clear HTTP 422 warning; OCR extraction is planned for Round 3.

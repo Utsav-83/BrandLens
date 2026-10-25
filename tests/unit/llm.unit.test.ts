@@ -30,4 +30,54 @@ describe("LLM boundary behaviour", () => {
     await vi.advanceTimersByTimeAsync(10);
     await pending;
   });
+
+  it("(a) is unavailable when provider and apiKey are set but model is empty", () => {
+    const client = new ProviderNeutralLLMClient({ provider: "openai", apiKey: "fake-key", model: "" });
+    expect(client.isAvailable()).toBe(false);
+  });
+
+  it("(b) is unavailable when provider is none", () => {
+    const client = new ProviderNeutralLLMClient({ provider: "none", apiKey: "fake-key", model: "custom-model" });
+    expect(client.isAvailable()).toBe(false);
+  });
+
+  it("(c) aborts hanging fetch at timeout and results in rules-only fallback", async () => {
+    vi.useFakeTimers();
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((_url: string, init?: RequestInit) => new Promise((_resolve, reject) => {
+        init?.signal?.addEventListener("abort", () => reject(new DOMException("Aborted", "AbortError")));
+      }))
+    );
+    const client = new ProviderNeutralLLMClient({
+      provider: "openai",
+      model: "unit-test-model",
+      apiKey: "fake-key",
+      timeoutMs: 50,
+    });
+    const pending = runAIJudge("w1", "Aurora Pay supports trusted merchants.", client);
+    await vi.advanceTimersByTimeAsync(60);
+    const result = await pending;
+
+    expect(result.aiStatus).toBe("unavailable");
+    expect(result.findings).toEqual([]);
+    expect(result.aiModel).toBeNull();
+  });
+
+  it("(d) results in rules-only fallback when fetch returns HTTP 500", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => new Response("Internal Server Error", { status: 500, statusText: "Internal Server Error" }))
+    );
+    const client = new ProviderNeutralLLMClient({
+      provider: "openai",
+      model: "unit-test-model",
+      apiKey: "fake-key",
+    });
+    const result = await runAIJudge("w1", "Aurora Pay supports trusted merchants.", client);
+
+    expect(result.aiStatus).toBe("unavailable");
+    expect(result.findings).toEqual([]);
+    expect(result.aiModel).toBeNull();
+  });
 });

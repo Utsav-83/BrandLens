@@ -3,11 +3,10 @@ import { db } from "@/lib/db";
 import { signToken, getAuthCookieOptions } from "@/lib/auth";
 import { ensureSeeded } from "@/lib/seed";
 import { assertSameOrigin } from "@/lib/guards";
-import { Role } from "@/generated/prisma";
+import { checkRateLimit } from "@/lib/ratelimit";
+import { demoRoleSchema } from "@/lib/validation";
 
 export const runtime = "nodejs";
-
-const VALID_ROLES: Role[] = ["creator", "manager", "reviewer", "admin"];
 
 export async function POST(
   request: Request,
@@ -23,15 +22,36 @@ export async function POST(
   if (process.env.DEMO_MODE !== "true") {
     return NextResponse.json(
       { error: "Demo mode is disabled on this server." },
-      { status: 403 }
+      { status: 404 }
     );
   }
 
-  const normalizedRole = role.toLowerCase() as Role;
-  if (!VALID_ROLES.includes(normalizedRole)) {
+  const parsedRole = demoRoleSchema.safeParse(role.toLowerCase());
+  if (!parsedRole.success) {
     return NextResponse.json(
-      { error: `Invalid role '${role}'. Valid options are: ${VALID_ROLES.join(", ")}` },
+      { error: `Invalid role '${role}'. Valid options are: creator, manager, reviewer, admin` },
       { status: 400 }
+    );
+  }
+  const normalizedRole = parsedRole.data;
+
+  // Rate limit: 10 attempts per 10 minutes keyed by IP from x-forwarded-for first value, fallback to "unknown"
+  const forwarded = request.headers.get("x-forwarded-for");
+  const ip = forwarded ? forwarded.split(",")[0].trim() : "unknown";
+  const rateLimit = await checkRateLimit(`demo-auth:${ip}`, 10, 600);
+  if (!rateLimit.allowed) {
+    const retryAfter = Math.max(1, Math.ceil((rateLimit.resetTime.getTime() - Date.now()) / 1000));
+    return NextResponse.json(
+      {
+        error: "Too many demo authentication attempts. Please try again later.",
+        resetTime: rateLimit.resetTime.toISOString(),
+      },
+      {
+        status: 429,
+        headers: {
+          "Retry-After": String(retryAfter),
+        },
+      }
     );
   }
 

@@ -7,8 +7,8 @@
 
 ## 🚀 Live Demo & Links
 
-- **Live Deployed App**: `https://brandlens-production.up.railway.app` (or Vercel deployment placeholder)
-- **GitHub Repository**: `https://github.com/SRUJANMMATTUR/Brandlens`
+- **Live Deployed App**: `<ADD DEPLOYED URL HERE>`
+- **GitHub Repository**: `https://github.com/Utsav-83/BrandLens`
 - **Team**: **SRUJANMMATTUR** (FutureStack Hackathon Round 2 of 3)
 
 ---
@@ -103,14 +103,14 @@ flowchart TD
 ## 🛠️ Tech Stack & Real Versions
 
 - **Framework**: Next.js 16.4.3 (App Router, Turbopack, dynamic routing)
-- **Runtime**: Node.js v24.21.0 (verified 20.9+ requirement)
+- **Runtime**: Node 22 LTS or newer (unpdf requires Node >= 22; Prisma 7 requires ^20.19 || ^22.12 || >=24)
 - **Language**: TypeScript 5.8.2
 - **Database & ORM**: PostgreSQL with Prisma ORM 7.10.1 (`@prisma/adapter-pg` driver adapter, custom generated client)
 - **UI & Styling**: Tailwind CSS v4, Lucide React icons, WCAG AA compliant contrast
 - **Security & Auth**: `jose` 6.2.13 (HS256 JWT in HttpOnly cookies), `bcryptjs` 3.0.3, Same-Origin enforcement, Postgres Advisory Locks
 - **Document Parsing**: `mammoth` 1.13.0 (DOCX), `unpdf` 1.9.1 (PDF with magic-byte `%PDF-` validation)
 - **Diffing**: `diff` 9.0.0
-- **Testing**: Vitest 3.2.7 (92 unit and integration tests passing across 10 test suites)
+- **Testing**: Vitest 3.2.7 (290 passed, 1 skipped across 20 test files, 21 suites; the skipped test is a live PostgreSQL concurrency check requiring a running DB)
 
 ---
 
@@ -137,15 +137,15 @@ JWT_SECRET="super-secret-at-least-32-chars-long-brandlens-hackathon-2026"
 DEMO_MODE="true"
 
 # LLM Configuration (Set to "none" for resilient rules-only mode)
+# When a provider is set, LLM_MODEL is required; falls back to rules-only mode if empty
 LLM_PROVIDER="none"   # "gemini" | "openai" | "anthropic" | "groq" | "none"
-LLM_MODEL="gemini-2.5-flash"
+LLM_MODEL=""          # Set to a model id from your chosen provider
 LLM_API_KEY=""
 ```
 
 ### 3. Generate Prisma Client & Run Migrations
 ```bash
-npx prisma generate
-npx prisma migrate dev --name init
+npx prisma generate && npx prisma migrate deploy
 ```
 
 ### 4. Seed Database
@@ -165,8 +165,11 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 ## 🧪 Running Tests & Quality Checks
 
 ```bash
-# Run complete test suite (92 tests across 10 suites)
+# Run complete test suite (290 passed, 1 skipped across 20 test files, 21 suites)
 npm test
+
+# Run integration tests against a live database (requires DIRECT_URL/TEST_DATABASE_URL)
+npm run test:integration
 
 # Run ESLint (Flat Config 9, zero warnings)
 npm run lint
@@ -189,10 +192,10 @@ npx tsx scripts/smoke-test.ts http://localhost:3000
 4. Create a separate branch in Neon for testing and assign to `TEST_DATABASE_URL`.
 
 ### 2. Apply Migrations & Seed
-Run from your local environment against the `DIRECT_URL`:
+The repository includes the baseline migration in `prisma/migrations/0_init`. Run from your local environment against `DIRECT_URL` (or using `npx prisma migrate deploy` which reads `DIRECT_URL` directly from `.env`):
 ```bash
-DATABASE_URL="$DIRECT_URL" npx prisma migrate deploy
-DATABASE_URL="$DIRECT_URL" npx tsx prisma/seed.ts
+npx prisma migrate deploy
+npm run db:seed
 ```
 
 ### 3. Deploy on Vercel
@@ -200,20 +203,20 @@ DATABASE_URL="$DIRECT_URL" npx tsx prisma/seed.ts
 2. In **Project Settings $\rightarrow$ Build & Development Settings**:
    - Framework Preset: **Next.js**
    - Build Command: `prisma generate && next build`
-   - Node.js Version: **20.x or 22.x**
+   - Node.js Version: **22.x only**
 3. In **Environment Variables**, add:
    - `DATABASE_URL`: *(Neon pooled connection string)*
    - `DIRECT_URL`: *(Neon direct connection string)*
    - `JWT_SECRET`: *(32+ character random secret)*
    - `DEMO_MODE`: `true`
-   - `LLM_PROVIDER`: `gemini` (or `openai`, `anthropic`, `none`)
-   - `LLM_MODEL`: `gemini-2.5-flash`
+   - `LLM_PROVIDER`: `gemini` (or `openai`, `anthropic`, `groq`, `none`)
+   - `LLM_MODEL`: *(Set to a model id from your provider; required if LLM_PROVIDER != none, falls back to rules-only if empty)*
    - `LLM_API_KEY`: *(Your private API key; never committed to Git)*
 4. Click **Deploy**. Vercel will build and deploy the application.
 
 ### 4. Safe Migrations, Redeployment & Rollback
 - **Redeploy**: Push to `main` branch or trigger a redeploy from Vercel dashboard.
-- **New Migration**: Run `prisma migrate dev` locally, commit migrations folder, and run `DATABASE_URL="$DIRECT_URL" prisma migrate deploy` before deploying the code.
+- **Database Migrations**: The baseline migration is located at `prisma/migrations/0_init`. Always deploy migrations with `npx prisma migrate deploy` (or `DATABASE_URL="$DIRECT_URL" npx prisma migrate deploy`) against the direct connection before triggering application code deployment.
 - **Instant Rollback**: Use Vercel's **Instant Rollback** button to restore previous deployment. Use Neon point-in-time restore or branch restore if a database rollback is required.
 
 ---
@@ -242,8 +245,16 @@ DATABASE_URL="$DIRECT_URL" npx tsx prisma/seed.ts
 
 ## 🔒 Security Summary
 
-- **No Secrets in Repo**: All keys reside in `.env` and Vercel environment variables.
-- **Input Sanitisation**: Strict Zod schemas on all API inputs.
-- **CSRF Defense**: `assertSameOrigin` enforced on every mutating POST/PATCH/PUT route.
-- **Rate Limiting**: Database-backed sliding window rate limit (10 analyses per user per 10 minutes) on `/api/submissions/[id]/analyse`.
-- **Content Privacy**: Document drafts are evaluated with Temperature 0 and never logged or stored outside the workspace boundary.
+### Security Model
+- **Server-Side Authorization**: `requireRole` is enforced on every protected Route Handler and Server Component (creators submit/edit, reviewers/managers sign off, admins manage knowledge sources).
+- **Ownership Enforcement**: `assertCanViewSubmission` and `assertCanEditSubmission` in `src/lib/guards.ts` enforce that creators can access, edit, analyse, and modify findings only for submissions where `creatorId === user.id` (returning HTTP 404 to prevent resource existence leakage).
+- **Separation of Duties**: `assertCanReview` in `src/lib/guards.ts` strictly forbids users (including admins) from approving or requesting changes on submissions they created (returning HTTP 403), and requires the submission to be in `in_review` status.
+- **CSRF & Origin Verification**: `assertSameOrigin` validates request origins against the host on all mutating requests (`POST`, `PUT`, `PATCH`).
+- **Content Security Policy & HSTS**: Strict CSP headers (`default-src 'self'`, `frame-ancestors 'none'`, `base-uri 'self'`, `form-action 'self'`, with `'unsafe-eval'` excluded in production builds). Strict-Transport-Security (`max-age=63072000; includeSubDomains`) is enforced in production.
+- **Database-Backed Rate Limiting**: Sliding window rate limits stored in PostgreSQL (`RateLimit` table) protect critical endpoints:
+  - Analyses (`POST /api/submissions/:id/analyse`): 10 per 10 minutes per user
+  - Standard Login (`POST /api/auth/login`): 10 attempts per 10 minutes per IP and email
+  - Demo Login (`POST /api/auth/demo/:role`): 10 attempts per 10 minutes per IP
+  - Document Uploads (`/api/submissions/upload` & `/api/sources/upload`): 20 uploads per 10 minutes per user
+- **Secure Cookie Sessions**: Session tokens are signed via `jose` HS256 JWT in `httpOnly`, `sameSite=lax` cookies (`secure: true` in production).
+- **Content Privacy & Sanitisation**: Input validated via Zod (including UUID route params via `idParamSchema`); document drafts are evaluated at Temperature 0; draft text, request bodies, and API keys are never written to logs.

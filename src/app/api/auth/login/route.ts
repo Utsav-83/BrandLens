@@ -16,16 +16,6 @@ export async function POST(request: Request) {
   const originError = assertSameOrigin(request);
   if (originError) return originError;
 
-  // Rate limit: 20 login attempts per IP/key per 5 minutes
-  const ip = request.headers.get("x-forwarded-for") || "client_ip";
-  const rateLimit = await checkRateLimit(`login:${ip}`, 20, 300);
-  if (!rateLimit.allowed) {
-    return NextResponse.json(
-      { error: "Too many login attempts. Please try again later." },
-      { status: 429, headers: { "Retry-After": "300" } }
-    );
-  }
-
   try {
     const body = await request.json();
     const parsed = loginSchema.safeParse(body);
@@ -37,6 +27,26 @@ export async function POST(request: Request) {
     }
 
     const { email, password } = parsed.data;
+
+    // Rate limit: 10 attempts per 10 minutes keyed by IP (first x-forwarded-for or "unknown") and email
+    const forwarded = request.headers.get("x-forwarded-for");
+    const ip = forwarded ? forwarded.split(",")[0].trim() : "unknown";
+    const rateLimit = await checkRateLimit(`login:${ip}:${email.toLowerCase().trim()}`, 10, 600);
+    if (!rateLimit.allowed) {
+      const retryAfter = Math.max(1, Math.ceil((rateLimit.resetTime.getTime() - Date.now()) / 1000));
+      return NextResponse.json(
+        {
+          error: "Too many login attempts. Please try again later.",
+          resetTime: rateLimit.resetTime.toISOString(),
+        },
+        {
+          status: 429,
+          headers: {
+            "Retry-After": String(retryAfter),
+          },
+        }
+      );
+    }
 
     const user = await db.user.findUnique({
       where: { email: email.toLowerCase() },

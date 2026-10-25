@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { requireRole, assertSameOrigin } from "@/lib/guards";
+import { requireRole, assertSameOrigin, assertCanEditSubmission } from "@/lib/guards";
 import { appendAudit } from "@/lib/audit";
 
 export const runtime = "nodejs";
@@ -45,8 +45,9 @@ export async function POST(
         throw new Error("NOT_FOUND");
       }
 
-      if (user.role === "creator" && finding.submission.creatorId !== user.id) {
-        throw new Error("FORBIDDEN");
+      const authError = assertCanEditSubmission(user, finding.submission);
+      if (authError) {
+        throw new Error("NOT_FOUND");
       }
 
       if (finding.submission.status === "approved") {
@@ -118,7 +119,7 @@ export async function POST(
   } catch (error: unknown) {
     if (error instanceof Error) {
       if (error.message === "NOT_FOUND") {
-        return NextResponse.json({ error: "Finding not found." }, { status: 404 });
+        return NextResponse.json({ error: "Finding not found or access denied." }, { status: 404 });
       }
       if (error.message === "FORBIDDEN") {
         return NextResponse.json({ error: "Access denied." }, { status: 403 });

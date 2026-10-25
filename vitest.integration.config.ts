@@ -5,7 +5,7 @@ export default defineConfig({
   test: {
     globals: true,
     environment: "node",
-    include: ["**/*.integration.test.ts"],
+    include: ["**/*.integration.test.ts", "tests/audit-concurrency.test.ts"],
     globalSetup: ["./tests/integration/global-setup.ts"],
     setupFiles: ["./tests/integration/setup-env.ts"],
     fileParallelism: false,

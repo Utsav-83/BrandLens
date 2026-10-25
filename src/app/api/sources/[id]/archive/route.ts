@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireRole, assertSameOrigin } from "@/lib/guards";
 import { appendAudit } from "@/lib/audit";
+import { idParamSchema } from "@/lib/validation";
 
 export const runtime = "nodejs";
 
@@ -17,6 +18,13 @@ export async function POST(
   const user = guard.user;
 
   const { id } = await params;
+  const parsedId = idParamSchema.safeParse(id);
+  if (!parsedId.success) {
+    return NextResponse.json(
+      { error: "Invalid ID parameter. Must be a valid UUID." },
+      { status: 400 }
+    );
+  }
 
   try {
     const archivedSource = await db.$transaction(async (tx) => {

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { requireRole, assertSameOrigin } from "@/lib/guards";
+import { requireRole, assertSameOrigin, assertCanEditSubmission } from "@/lib/guards";
 import { applyFindingReplacement } from "@/lib/workflow";
 import { appendAudit } from "@/lib/audit";
 
@@ -46,8 +46,9 @@ export async function POST(
         throw new Error("NOT_FOUND");
       }
 
-      if (user.role === "creator" && finding.submission.creatorId !== user.id) {
-        throw new Error("FORBIDDEN");
+      const authError = assertCanEditSubmission(user, finding.submission);
+      if (authError) {
+        throw new Error("NOT_FOUND");
       }
 
       if (finding.submission.status === "approved") {
@@ -101,6 +102,25 @@ export async function POST(
       });
 
       // Shift downstream pending finding offsets
+      if (rep.replacementStart !== undefined && rep.replacementEnd !== undefined) {
+        const overlappingFindings = await tx.finding.findMany({
+          where: {
+            submissionId: finding.submissionId,
+            id: { not: id },
+            decision: "pending",
+            start: { lt: rep.replacementEnd },
+            end: { gt: rep.replacementStart },
+          },
+          select: { id: true },
+        });
+        if (overlappingFindings.length > 0) {
+          await tx.finding.updateMany({
+            where: { id: { in: overlappingFindings.map((item) => item.id) } },
+            data: { stale: true },
+          });
+        }
+      }
+
       if (rep.delta !== undefined && rep.delta !== 0 && rep.replacementEnd !== undefined) {
         const downstreamFindings = await tx.finding.findMany({
           where: {
@@ -169,7 +189,7 @@ export async function POST(
   } catch (error: unknown) {
     if (error instanceof Error) {
       if (error.message === "NOT_FOUND") {
-        return NextResponse.json({ error: "Finding not found." }, { status: 404 });
+        return NextResponse.json({ error: "Finding not found or access denied." }, { status: 404 });
       }
       if (error.message === "FORBIDDEN") {
         return NextResponse.json({ error: "Access denied." }, { status: 403 });

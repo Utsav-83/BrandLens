@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { requireRole, assertSameOrigin } from "@/lib/guards";
-import { validateApproval } from "@/lib/workflow";
+import { requireRole, assertSameOrigin, assertCanReview } from "@/lib/guards";
+import { idParamSchema } from "@/lib/validation";
 import { appendAudit } from "@/lib/audit";
 
 export const runtime = "nodejs";
@@ -18,6 +18,13 @@ export async function POST(
   const user = guard.user;
 
   const { id } = await params;
+  const parsedId = idParamSchema.safeParse(id);
+  if (!parsedId.success) {
+    return NextResponse.json(
+      { error: "Invalid ID parameter. Must be a valid UUID." },
+      { status: 400 }
+    );
+  }
 
   try {
     const result = await db.$transaction(async (tx) => {
@@ -32,12 +39,14 @@ export async function POST(
         throw new Error("NOT_FOUND");
       }
 
-      // Enforce separation of duties: creators cannot approve their own work
-      const validation = validateApproval(submission, user.id, user.role);
-      if (!validation.allowed) {
+      // Enforce separation of duties and reviewable status
+      const reviewError = assertCanReview(user, submission);
+      if (reviewError) {
+        const errorJson = (await reviewError.json()) as { error: string };
         return {
           allowed: false,
-          reason: validation.reason,
+          status: reviewError.status,
+          reason: errorJson.error,
         };
       }
 
@@ -72,7 +81,7 @@ export async function POST(
     });
 
     if (!result.allowed) {
-      return NextResponse.json({ error: result.reason }, { status: 403 });
+      return NextResponse.json({ error: result.reason }, { status: result.status || 403 });
     }
 
     return NextResponse.json({

@@ -7,6 +7,9 @@ import {
   ArrowRight,
   CheckCircle2,
   User,
+  AlertTriangle,
+  AlertCircle,
+  Info,
 } from "lucide-react";
 import { formatTimeAgo } from "@/lib/utils";
 
@@ -50,12 +53,12 @@ export default async function ReviewQueuePage() {
               {submissions.length} pending
             </span>
           </div>
-          <p className="text-sm text-slate-500 mt-1">
+          <p className="text-sm text-slate-600 mt-1">
             Marketing copy submitted by creators waiting for reviewer sign-off or change requests.
           </p>
         </div>
 
-        <div className="text-xs text-slate-500 bg-slate-50 border border-slate-200 px-3 py-2 rounded-lg">
+        <div className="text-xs text-slate-600 bg-slate-50 border border-slate-200 px-3 py-2 rounded-lg">
           Logged in as <strong>{user.name}</strong> ({user.role})
         </div>
       </div>
@@ -66,7 +69,7 @@ export default async function ReviewQueuePage() {
             <CheckCircle2 className="w-6 h-6" />
           </div>
           <h3 className="text-base font-bold text-slate-900">Review Queue Clear</h3>
-          <p className="text-xs text-slate-500 max-w-sm mx-auto">
+          <p className="text-xs text-slate-600 max-w-sm mx-auto">
             All submitted drafts have been reviewed. When creators submit drafts for review,
             they will appear here for manager or reviewer sign-off.
           </p>
@@ -112,7 +115,7 @@ export default async function ReviewQueuePage() {
                         >
                           {sub.title}
                         </Link>
-                        <span className="text-xs text-slate-400">
+                        <span className="text-xs text-slate-600">
                           {sub.currentText.trim().split(/\s+/).length} words
                         </span>
                       </td>
@@ -125,7 +128,7 @@ export default async function ReviewQueuePage() {
 
                       <td className="px-6 py-4 whitespace-nowrap text-xs text-slate-700">
                         <div className="flex items-center gap-1.5">
-                          <User className="w-3.5 h-3.5 text-slate-400" />
+                          <User className="w-3.5 h-3.5 text-slate-500" />
                           <span>{sub.creator.name}</span>
                         </div>
                       </td>
@@ -138,17 +141,20 @@ export default async function ReviewQueuePage() {
                         ) : (
                           <div className="flex items-center gap-1.5">
                             {highCount > 0 && (
-                              <span className="px-1.5 py-0.5 rounded text-xs font-bold bg-red-100 text-red-700">
+                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-bold bg-red-100 text-red-800">
+                                <AlertTriangle className="w-3 h-3 shrink-0 text-red-700" aria-hidden="true" />
                                 {highCount} High
                               </span>
                             )}
                             {medCount > 0 && (
-                              <span className="px-1.5 py-0.5 rounded text-xs font-semibold bg-amber-100 text-amber-800">
+                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-semibold bg-amber-100 text-amber-900">
+                                <AlertCircle className="w-3 h-3 shrink-0 text-amber-700" aria-hidden="true" />
                                 {medCount} Med
                               </span>
                             )}
                             {lowCount > 0 && (
-                              <span className="px-1.5 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-700">
+                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-900">
+                                <Info className="w-3 h-3 shrink-0 text-blue-700" aria-hidden="true" />
                                 {lowCount} Low
                               </span>
                             )}
@@ -156,14 +162,14 @@ export default async function ReviewQueuePage() {
                         )}
                       </td>
 
-                      <td className="px-6 py-4 whitespace-nowrap text-xs text-slate-500">
+                      <td className="px-6 py-4 whitespace-nowrap text-xs text-slate-600">
                         {formatTimeAgo(sub.updatedAt)}
                       </td>
 
                       <td className="px-6 py-4 whitespace-nowrap text-right">
                         <Link
                           href={`/submissions/${sub.id}`}
-                          className="inline-flex items-center gap-1 px-3 py-1.5 bg-teal-600 hover:bg-teal-700 text-white rounded text-xs font-semibold shadow-xs transition"
+                          className="inline-flex items-center gap-1 px-3 py-1.5 bg-teal-600 hover:bg-teal-700 text-white rounded text-xs font-semibold shadow-xs focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-600 transition"
                         >
                           Review Draft
                           <ArrowRight className="w-3.5 h-3.5" />
