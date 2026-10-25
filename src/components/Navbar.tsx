@@ -66,7 +66,7 @@ export function Navbar({ user }: NavbarProps) {
       label: "Audit Trail",
       href: "/audit",
       icon: ShieldCheck,
-      show: role === "manager" || role === "admin",
+      show: role === "manager" || role === "reviewer" || role === "admin",
     },
   ];
 

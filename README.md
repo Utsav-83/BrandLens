@@ -246,15 +246,16 @@ npm run db:seed
 ## 🔒 Security Summary
 
 ### Security Model
-- **Server-Side Authorization**: `requireRole` is enforced on every protected Route Handler and Server Component (creators submit/edit, reviewers/managers sign off, admins manage knowledge sources).
-- **Ownership Enforcement**: `assertCanViewSubmission` and `assertCanEditSubmission` in `src/lib/guards.ts` enforce that creators can access, edit, analyse, and modify findings only for submissions where `creatorId === user.id` (returning HTTP 404 to prevent resource existence leakage).
+- **Server-Side Authorization**: `requireRole` is enforced on every protected Route Handler and Server Component (creators submit/edit, reviewers/managers sign off and read audit records, admins manage knowledge sources).
+- **Audit Privacy**: Audit pages and APIs are limited to managers, reviewers, and admins; event payloads are omitted from the audit views so draft excerpts and comment text are not exposed there.
+- **Ownership Enforcement**: Creators can view and edit their own submissions; admins can view and edit any submission in their workspace. Managers and reviewers can view submissions in review-related states. `assertCanViewSubmission` and `assertCanEditSubmission` enforce workspace and role boundaries, returning HTTP 404 for inaccessible submissions.
 - **Separation of Duties**: `assertCanReview` in `src/lib/guards.ts` strictly forbids users (including admins) from approving or requesting changes on submissions they created (returning HTTP 403), and requires the submission to be in `in_review` status.
 - **CSRF & Origin Verification**: `assertSameOrigin` validates request origins against the host on all mutating requests (`POST`, `PUT`, `PATCH`).
 - **Content Security Policy & HSTS**: Strict CSP headers (`default-src 'self'`, `frame-ancestors 'none'`, `base-uri 'self'`, `form-action 'self'`, with `'unsafe-eval'` excluded in production builds). Strict-Transport-Security (`max-age=63072000; includeSubDomains`) is enforced in production.
 - **Database-Backed Rate Limiting**: Sliding window rate limits stored in PostgreSQL (`RateLimit` table) protect critical endpoints:
   - Analyses (`POST /api/submissions/:id/analyse`): 10 per 10 minutes per user
   - Standard Login (`POST /api/auth/login`): 10 attempts per 10 minutes per IP and email
-  - Demo Login (`POST /api/auth/demo/:role`): 10 attempts per 10 minutes per IP
+  - Demo Login (`POST /api/auth/demo/:role`): 30 attempts per 10 minutes per IP to accommodate shared event networks
   - Document Uploads (`/api/submissions/upload` & `/api/sources/upload`): 20 uploads per 10 minutes per user
 - **Secure Cookie Sessions**: Session tokens are signed via `jose` HS256 JWT in `httpOnly`, `sameSite=lax` cookies (`secure: true` in production).
 - **Content Privacy & Sanitisation**: Input validated via Zod (including UUID route params via `idParamSchema`); document drafts are evaluated at Temperature 0; draft text, request bodies, and API keys are never written to logs.

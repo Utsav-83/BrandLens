@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { requireRole } from "@/lib/guards";
+import { AUDIT_READ_ROLES, requireRole } from "@/lib/guards";
 
 export const runtime = "nodejs";
 
-// GET /api/audit: manager and admin only
+// GET /api/audit: manager, reviewer, and admin only. Omit payloads so audit
+// readers cannot retrieve excerpts of creators' draft text from event metadata.
 export async function GET(request: Request) {
-  const guard = await requireRole("admin", "manager");
+  const guard = await requireRole(...AUDIT_READ_ROLES);
   if (guard.error) return guard.error;
   const user = guard.user;
 
@@ -37,7 +38,7 @@ export async function GET(request: Request) {
     ]);
 
     return NextResponse.json({
-      entries,
+      entries: entries.map(({ payload: _payload, ...entry }) => entry),
       pagination: {
         page,
         limit,

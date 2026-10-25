@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { requireRole } from "@/lib/guards";
+import { AUDIT_READ_ROLES, requireRole } from "@/lib/guards";
 import { verifyChain } from "@/lib/audit";
 
 export const runtime = "nodejs";
 
-// GET /api/audit/verify: manager and admin only
+// GET /api/audit/verify: manager, reviewer, and admin only
 export async function GET() {
-  const guard = await requireRole("admin", "manager");
+  const guard = await requireRole(...AUDIT_READ_ROLES);
   if (guard.error) return guard.error;
   const user = guard.user;
 

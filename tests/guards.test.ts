@@ -6,6 +6,7 @@ import {
   assertCanReview,
   canViewSubmission,
   canEditSubmission,
+  AUDIT_READ_ROLES,
 } from "@/lib/guards";
 import { Role, SubmissionStatus } from "@/generated/prisma";
 import { AuthenticatedUser } from "@/lib/auth";
@@ -22,6 +23,14 @@ function evaluateRoleAccess(user: { role: Role } | null, allowedRoles: Role[]) {
 }
 
 describe("Guards & Authorization", () => {
+  it("allows only manager, reviewer, and admin to read audit data", () => {
+    expect(AUDIT_READ_ROLES).toEqual(["manager", "reviewer", "admin"]);
+    for (const role of AUDIT_READ_ROLES) {
+      expect(evaluateRoleAccess({ role }, [...AUDIT_READ_ROLES]).status).toBe(200);
+    }
+    expect(evaluateRoleAccess({ role: "creator" }, [...AUDIT_READ_ROLES]).status).toBe(403);
+  });
+
   it("authorizes user with allowed role", () => {
     const user = { role: "creator" as Role };
     const result = evaluateRoleAccess(user, ["creator", "manager"]);

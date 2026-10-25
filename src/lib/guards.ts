@@ -14,6 +14,8 @@ export interface GuardFailure {
 
 export type GuardResult = GuardSuccess | GuardFailure;
 
+export const AUDIT_READ_ROLES: readonly Role[] = ["manager", "reviewer", "admin"];
+
 /**
  * Enforces role-based access control on Route Handlers.
  * Returns either { user, error: null } or { user: null, error: NextResponse }

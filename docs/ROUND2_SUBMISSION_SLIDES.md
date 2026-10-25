@@ -110,7 +110,7 @@ Deterministic Checks (1.0 conf)  +  Tone & Semantic Claims  +  Accept / Edit / R
 2. **Strict Citation Validation ("No source, no verdict")**: AI findings are dropped if `sourceQuote` is not found verbatim in retrieved passages. Fabricated numbers in suggested fixes are stripped. Unsubstantiated claims are categorized as `unsupported_claim` capped at medium severity.
 3. **Race-Safe Cryptographic Audit Chain**: Every review event, human decision, and status change is sealed with SHA-256 ($\text{Hash}_n = \text{SHA256}(\text{Hash}_{n-1} + \dots)$) under a transaction-level PostgreSQL advisory lock (`SELECT pg_advisory_xact_lock(hashtext($workspaceId))`).
 4. **Idempotent Human Decisions**: Finding acceptance runs in a database transaction (`db.$transaction`). Duplicate clicks return 200 without double-editing copy, and downstream offsets shift automatically by `delta`.
-5. **Database-Backed Rate Limiting**: Sliding window rate limits stored in the `RateLimit` table prevent API abuse (10 analyses per user per 10 mins; 20 logins per IP per 5 mins; returns HTTP 429 with `Retry-After`).
+5. **Database-Backed Rate Limiting**: Sliding window limits stored in the `RateLimit` table protect analysis (10 per user per 10 mins), standard login (10 per IP and email per 10 mins), demo login (30 per IP per 10 mins for shared event networks), and uploads (20 per user per 10 mins).
 6. **Separation of Duties Enforcement**: Creators are strictly forbidden from approving their own drafts on the server (`validateApproval`), and change requests require mandatory non-empty explanatory feedback (`validateRequestChanges`).
 
 ---

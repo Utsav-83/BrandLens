@@ -3,6 +3,7 @@ import { idParamSchema, demoRoleSchema } from "@/lib/validation";
 import { checkRateLimit } from "@/lib/ratelimit";
 import { validateJwtSecret } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { DEMO_LOGIN_RATE_LIMIT } from "@/lib/rate-limit-policy";
 
 vi.mock("@/lib/db", () => ({
   db: {
@@ -13,6 +14,10 @@ vi.mock("@/lib/db", () => ({
 }));
 
 describe("Security Hardening Pass", () => {
+  it("allows 30 demo logins per IP in a 10-minute window for shared demo venues", () => {
+    expect(DEMO_LOGIN_RATE_LIMIT).toEqual({ attempts: 30, windowSeconds: 600 });
+  });
+
   describe("Zod ID Validation (:id route parameter)", () => {
     it("accepts valid UUIDs", () => {
       const validUuid = "123e4567-e89b-12d3-a456-426614174000";

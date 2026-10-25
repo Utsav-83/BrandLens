@@ -4,6 +4,7 @@ import { signToken, getAuthCookieOptions } from "@/lib/auth";
 import { ensureSeeded } from "@/lib/seed";
 import { assertSameOrigin } from "@/lib/guards";
 import { checkRateLimit } from "@/lib/ratelimit";
+import { DEMO_LOGIN_RATE_LIMIT } from "@/lib/rate-limit-policy";
 import { demoRoleSchema } from "@/lib/validation";
 
 export const runtime = "nodejs";
@@ -38,7 +39,11 @@ export async function POST(
   // Rate limit: 10 attempts per 10 minutes keyed by IP from x-forwarded-for first value, fallback to "unknown"
   const forwarded = request.headers.get("x-forwarded-for");
   const ip = forwarded ? forwarded.split(",")[0].trim() : "unknown";
-  const rateLimit = await checkRateLimit(`demo-auth:${ip}`, 10, 600);
+  const rateLimit = await checkRateLimit(
+    `demo-auth:${ip}`,
+    DEMO_LOGIN_RATE_LIMIT.attempts,
+    DEMO_LOGIN_RATE_LIMIT.windowSeconds
+  );
   if (!rateLimit.allowed) {
     const retryAfter = Math.max(1, Math.ceil((rateLimit.resetTime.getTime() - Date.now()) / 1000));
     return NextResponse.json(

@@ -1,6 +1,7 @@
 import React from "react";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
+import { AUDIT_READ_ROLES } from "@/lib/guards";
 import { db } from "@/lib/db";
 import { AuditViewer, AuditRecord } from "./AuditViewer";
 
@@ -12,8 +13,7 @@ export default async function AuditPage() {
     redirect("/login");
   }
 
-  // Only manager and admin are authorized to view audit logs
-  if (user.role !== "manager" && user.role !== "admin") {
+  if (!AUDIT_READ_ROLES.includes(user.role)) {
     redirect("/");
   }
 
@@ -34,7 +34,6 @@ export default async function AuditPage() {
     createdAt: l.createdAt,
     prevHash: l.prevHash,
     hash: l.hash,
-    payload: l.payload,
   }));
 
   return (
