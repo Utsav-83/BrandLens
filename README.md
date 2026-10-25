@@ -110,7 +110,7 @@ flowchart TD
 - **Security & Auth**: `jose` 6.2.13 (HS256 JWT in HttpOnly cookies), `bcryptjs` 3.0.3, Same-Origin enforcement, Postgres Advisory Locks
 - **Document Parsing**: `mammoth` 1.13.0 (DOCX), `unpdf` 1.9.1 (PDF with magic-byte `%PDF-` validation)
 - **Diffing**: `diff` 9.0.0
-- **Testing**: Vitest 3.2.7 (290 passed, 1 skipped across 20 test files, 21 suites; the skipped test is a live PostgreSQL concurrency check requiring a running DB)
+- **Testing**: Vitest 3.2.7 (292 passed, 1 skipped across 20 test files, 21 suites; the skipped test is a live PostgreSQL concurrency check requiring a separate test DB)
 
 ---
 
@@ -165,7 +165,7 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 ## 🧪 Running Tests & Quality Checks
 
 ```bash
-# Run complete test suite (290 passed, 1 skipped across 20 test files, 21 suites)
+# Run complete test suite (292 passed, 1 skipped across 20 test files, 21 suites)
 npm test
 
 # Run integration tests against a live database (requires DIRECT_URL/TEST_DATABASE_URL)

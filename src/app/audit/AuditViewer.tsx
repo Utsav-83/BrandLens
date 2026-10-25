@@ -37,6 +37,7 @@ export function AuditViewer({ initialLogs }: AuditViewerProps) {
     valid: boolean;
     brokenAtId?: string;
     count?: number;
+    message?: string;
     checkedAt: string;
   } | null>(null);
 
@@ -45,17 +46,28 @@ export function AuditViewer({ initialLogs }: AuditViewerProps) {
     setVerificationResult(null);
     try {
       const res = await fetch("/api/audit/verify");
-      const data = await res.json();
+      const data = (await res.json()) as {
+        intact?: unknown;
+        totalEntries?: unknown;
+        brokenId?: unknown;
+        reason?: unknown;
+        error?: unknown;
+      };
+      if (!res.ok || typeof data.intact !== "boolean") {
+        throw new Error(typeof data.error === "string" ? data.error : "Audit verification failed.");
+      }
       setVerificationResult({
-        valid: data.valid,
-        brokenAtId: data.brokenAtId,
-        count: data.count,
+        valid: data.intact,
+        brokenAtId: typeof data.brokenId === "string" ? data.brokenId : undefined,
+        count: typeof data.totalEntries === "number" ? data.totalEntries : undefined,
+        message: typeof data.reason === "string" ? data.reason : undefined,
         checkedAt: new Date().toLocaleTimeString(),
       });
     } catch (err) {
       console.error("Integrity check failed:", err);
       setVerificationResult({
         valid: false,
+        message: err instanceof Error ? err.message : "Audit verification failed.",
         checkedAt: new Date().toLocaleTimeString(),
       });
     } finally {
@@ -142,7 +154,9 @@ export function AuditViewer({ initialLogs }: AuditViewerProps) {
               <p className="text-xs mt-0.5 text-slate-700">
                 {verificationResult.valid
                   ? `All ${verificationResult.count ?? "recorded"} events match their expected cryptographic SHA-256 hash digests.`
-                  : `First invalid hash link detected at entry ID: ${verificationResult.brokenAtId}`}
+                  : verificationResult.brokenAtId
+                    ? `First invalid hash link detected at entry ID: ${verificationResult.brokenAtId}`
+                    : verificationResult.message ?? "Audit verification could not be completed."}
               </p>
             </div>
           </div>

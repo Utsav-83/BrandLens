@@ -103,7 +103,7 @@ Deterministic Checks (1.0 conf)  +  Tone & Semantic Claims  +  Accept / Edit / R
 - **Authentication**: `jose` 6.2.13 (HS256 JWT in HttpOnly cookies), `bcryptjs` 3.0.3, Same-Origin CSRF validation
 - **Parsing & Diffing**: `mammoth` 1.13.0 (DOCX), `unpdf` 1.9.1 (PDF magic-bytes), `diff` 9.0.0 (word-level diff)
 - **UI & Styling**: Tailwind CSS 4.0.9, Lucide React icons, WCAG AA 4.5:1 contrast
-- **Test Suite**: Vitest 3.2.7 — **290 tests passed, 1 skipped** in the latest local run; production build and hosted smoke test still need verification.
+- **Test Suite**: Vitest 3.2.7 — **292 tests passed, 1 skipped** in the latest local run; production webpack build passes, while the hosted smoke test still needs verification.
 
 ### 6 Core Reliability & Enterprise Safety Measures
 1. **Zero-Crash Fallback Mode**: If `LLM_API_KEY` is missing, invalid, or times out (20s `AbortController`), BrandLens never throws 500. It degrades smoothly to rules-only mode with a visible amber banner (`AI review unavailable, rules-only results`).
@@ -160,7 +160,7 @@ Deterministic Checks (1.0 conf)  +  Tone & Semantic Claims  +  Accept / Edit / R
 | **Deterministic Rules** | Conceptual idea | 6 production-grade pure rules with 100% offset accuracy |
 | **Hallucination Defense** | Prompt engineering only | Multi-step citation validator: drops unverified quotes & fabricated numbers |
 | **Audit Ledger** | Standard timestamped DB rows | SHA-256 hash chain with advisory lock and instant UI verification badge |
-| **Test Coverage** | 0 tests | **290 passing, 1 skipped in latest local suite; live Postgres concurrency test requires a test database** |
+| **Test Coverage** | 0 tests | **292 passing, 1 skipped in latest local suite; live Postgres concurrency test requires a separate test database** |
 | **Judge Usability** | Manual registration & setup | 1-click demo logins for 4 personas, pre-seeded Aurora Pay workspace |
 | **Deployment** | Not deployed | Vercel + Neon deployment path documented with an automated smoke test script; production deployment not yet verified |
 
