@@ -240,6 +240,7 @@ npm run db:seed
 1. **Scanned / Image-Only PDFs**: PDF text extraction relies on embedded text streams via `unpdf`. Scanned document OCR is scheduled for Round 3.
 2. **In-Memory BM25 Indexing**: Currently constructs the BM25 index over active chunks at request time. This is blazingly fast for workspaces up to 10,000 chunks, but will transition to database-persisted inverted indices in Round 3.
 3. **Single Active Workspace**: Demo environment is pre-configured for "Aurora Pay". Multi-tenant workspace switching will be exposed in Round 3.
+4. **Rate-Limit Availability Trade-off**: Rate limiting is database-backed, but fails open if PostgreSQL is unavailable so database incidents do not block demo users. Limits therefore do not protect endpoints while the database is unreachable.
 
 ---
 

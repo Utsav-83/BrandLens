@@ -175,7 +175,7 @@ story += [
     bullet("Authorization:", "Route handlers and server-rendered pages enforce identity and role checks; proxy.ts is only a convenience redirect. Creators can edit their own drafts; admins can edit any draft in their workspace. Managers and reviewers see only review-related submissions."),
     bullet("Review boundary:", "A creator cannot approve their own submission, including when the creator also has an admin role. Audit pages and APIs are limited to managers, reviewers and admins; event payloads are omitted from audit views."),
     bullet("Request safety:", "Zod validates API inputs. Mutating requests check Origin. JWTs use httpOnly, sameSite=lax cookies, secure in production. Production HSTS is configured; development-only unsafe-eval is excluded from production CSP."),
-    bullet("Data handling:", "Draft text and secrets are not intentionally logged. The analysis route has a 60-second maximum duration. PostgreSQL rate limits work across serverless instances; demo login allows 30 attempts per IP per 10 minutes for shared event networks."),
+    bullet("Data handling:", "Draft text and secrets are not intentionally logged. The analysis route has a 60-second maximum duration. PostgreSQL rate limits work across serverless instances; demo login allows 30 attempts per IP per 10 minutes for shared event networks. The limiter fails open when PostgreSQL is unavailable, favoring demo availability over abuse protection during an outage."),
     p("VERIFICATION RESULTS", "Section"),
 ]
 verification = [
