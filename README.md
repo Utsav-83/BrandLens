@@ -102,7 +102,7 @@ flowchart TD
 
 ## 🛠️ Tech Stack & Real Versions
 
-- **Framework**: Next.js 16.4.3 (App Router, Turbopack, dynamic routing)
+- **Framework**: Next.js 16.4.3 (App Router, Turbopack for development, webpack for production builds, dynamic routing)
 - **Runtime**: Node 22 LTS or newer (unpdf requires Node >= 22; Prisma 7 requires ^20.19 || ^22.12 || >=24)
 - **Language**: TypeScript 5.8.2
 - **Database & ORM**: PostgreSQL with Prisma ORM 7.10.1 (`@prisma/adapter-pg` driver adapter, custom generated client)

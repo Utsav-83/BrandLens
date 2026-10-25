@@ -182,7 +182,7 @@ verification = [
     [p("Check", "CellHead"), p("Result", "CellHead")],
     [p("Automated suite", "Cell"), p("292 passed, 1 skipped; the skipped concurrency integration test needs a dedicated test database.", "Cell")],
     [p("Lint and types", "Cell"), p("ESLint and TypeScript no-emit passed.", "Cell")],
-    [p("Production build", "Cell"), p("Next.js 16 webpack production build passed. Turbopack encountered a worker-start restriction in this Windows execution sandbox.", "Cell")],
+    [p("Production build", "Cell"), p("The package build script now selects webpack because Turbopack's CSS Node worker exited before connecting on this Windows workstation, including outside the sandbox. The exact npm run build command passes with webpack; Vercel's Linux build result remains unverified.", "Cell")],
     [p("Database", "Cell"), p("Prisma migrate status failed against the configured sample Neon endpoint. No valid production or separate test database has been verified.", "Cell")],
     [p("Deployment", "Cell"), p("The current implementation and submission updates are pushed to main. Vercel deployment and public smoke test are still unverified.", "Cell")],
 ]

@@ -97,7 +97,7 @@ Deterministic Checks (1.0 conf)  +  Tone & Semantic Claims  +  Accept / Edit / R
 ```
 
 ### Real Implementation Stack
-- **Framework**: Next.js 16.4.3 (App Router, Turbopack, Dynamic Server Components)
+- **Framework**: Next.js 16.4.3 (App Router, Turbopack development, webpack production build, Dynamic Server Components)
 - **Runtime**: Node.js v24.21.0 (verified 20.9+ requirement)
 - **Database & ORM**: PostgreSQL with Prisma ORM 7.10.1 (`@prisma/adapter-pg` driver adapter, custom generated client)
 - **Authentication**: `jose` 6.2.13 (HS256 JWT in HttpOnly cookies), `bcryptjs` 3.0.3, Same-Origin CSRF validation
@@ -156,7 +156,7 @@ Deterministic Checks (1.0 conf)  +  Tone & Semantic Claims  +  Accept / Edit / R
 
 | Dimension | Round 1 Plan | Round 2 Actual Delivered State |
 | :--- | :--- | :--- |
-| **Architecture** | FastAPI + Vite frontend | Next.js 16 App Router (Turbopack, TypeScript, Server Components) |
+| **Architecture** | FastAPI + Vite frontend | Next.js 16 App Router (Turbopack development, webpack production build, TypeScript, Server Components) |
 | **Deterministic Rules** | Conceptual idea | 6 production-grade pure rules with 100% offset accuracy |
 | **Hallucination Defense** | Prompt engineering only | Multi-step citation validator: drops unverified quotes & fabricated numbers |
 | **Audit Ledger** | Standard timestamped DB rows | SHA-256 hash chain with advisory lock and instant UI verification badge |
