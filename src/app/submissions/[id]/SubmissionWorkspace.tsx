@@ -15,6 +15,7 @@ import {
   MessageSquare,
   GitCompare,
   History,
+  Clock,
   Layers,
   ChevronRight,
   Loader2,
@@ -94,13 +95,14 @@ export interface SubmissionData {
   findings: FindingItem[];
   comments: CommentItem[];
   auditLogs: AuditItem[];
+  stages: Array<{ id: string; stageId: string; status: "pending" | "approved" | "changes_requested"; stage: { name: string; order: number; requiredReviewerRole: string }; decidedBy: { name: string } | null }>;
 }
 
 export interface CurrentUser {
   id: string;
   email: string;
   name: string;
-  role: "creator" | "manager" | "reviewer" | "admin";
+  role: "creator" | "manager" | "reviewer" | "legal_reviewer" | "admin";
 }
 
 interface SubmissionWorkspaceProps {
@@ -150,6 +152,7 @@ export function SubmissionWorkspace({
   const isReviewerOrManager =
     currentUser.role === "manager" ||
     currentUser.role === "reviewer" ||
+    currentUser.role === "legal_reviewer" ||
     currentUser.role === "admin";
   const canApproveOrRequest = isReviewerOrManager && !isCreator;
 
@@ -582,6 +585,20 @@ export function SubmissionWorkspace({
         </div>
 
         {/* Global Alert Banners */}
+        {submission.stages.length > 0 && (
+          <section aria-label="Approval stage progress" className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+            <h2 className="text-xs font-bold uppercase tracking-wide text-slate-700 mb-2">Approval stages</h2>
+            <ol className="flex flex-wrap gap-2">
+              {submission.stages.map((item) => (
+                <li key={item.id} className="inline-flex items-center gap-1.5 rounded border border-slate-300 bg-white px-2.5 py-1.5 text-xs text-slate-800">
+                  {item.status === "approved" ? <CheckCircle2 aria-hidden="true" className="h-3.5 w-3.5" /> : item.status === "changes_requested" ? <AlertTriangle aria-hidden="true" className="h-3.5 w-3.5" /> : <Clock aria-hidden="true" className="h-3.5 w-3.5" />}
+                  <span>{item.stage.name}: {item.status.replaceAll("_", " ")}</span>
+                  <span className="text-slate-600">({item.stage.requiredReviewerRole.replaceAll("_", " ")})</span>
+                </li>
+              ))}
+            </ol>
+          </section>
+        )}
         <RulesOnlyBanner aiStatus={submission.aiStatus} />
 
         {isStale && (

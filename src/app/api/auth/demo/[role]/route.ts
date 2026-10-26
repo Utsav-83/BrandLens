@@ -30,7 +30,7 @@ export async function POST(
   const parsedRole = demoRoleSchema.safeParse(role.toLowerCase());
   if (!parsedRole.success) {
     return NextResponse.json(
-      { error: `Invalid role '${role}'. Valid options are: creator, manager, reviewer, admin` },
+      { error: `Invalid role '${role}'. Valid options are: creator, manager, reviewer, legal_reviewer, admin` },
       { status: 400 }
     );
   }

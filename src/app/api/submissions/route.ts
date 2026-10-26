@@ -7,11 +7,24 @@ import { Channel, SubmissionStatus } from "@/generated/prisma";
 
 export const runtime = "nodejs";
 
-const createSubmissionSchema = z.object({
-  title: z.string().min(1, "Title is required").max(200),
-  channel: z.enum(["social", "web", "email", "print", "deck"]),
-  text: z.string().min(1, "Text content is required"),
-});
+const createSubmissionSchema = z
+  .object({
+    title: z.string().min(1, "Title is required").max(200),
+    channel: z.enum(["social", "web", "email", "print", "deck"]).optional().default("web"),
+    text: z.string().min(1, "Text content is required").optional(),
+    content: z.string().optional(),
+    body: z.string().optional(),
+    originalText: z.string().optional(),
+  })
+  .transform((data) => ({
+    title: data.title,
+    channel: data.channel ?? "web",
+    text: (data.text || data.content || data.body || data.originalText || "").trim(),
+  }))
+  .refine((data) => data.text.length > 0, {
+    message: "Text content is required",
+    path: ["text"],
+  });
 
 // GET /api/submissions: creators see their own; managers/reviewers/admins see all
 export async function GET(request: Request) {

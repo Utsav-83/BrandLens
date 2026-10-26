@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireRole, assertSameOrigin, assertCanEditSubmission } from "@/lib/guards";
 import { idParamSchema } from "@/lib/validation";
-import { validateSubmitForReview } from "@/lib/workflow";
+import { validateSubmitForReview, selectRequiredApprovalStages } from "@/lib/workflow";
 import { appendAudit } from "@/lib/audit";
 
 export const runtime = "nodejs";
@@ -58,6 +58,15 @@ export async function POST(
         };
       }
 
+      const [stages, rules] = await Promise.all([
+        tx.approvalStage.findMany({ where: { workspaceId: user.workspaceId }, orderBy: { order: "asc" } }),
+        tx.approvalRule.findMany({ where: { workspaceId: user.workspaceId } }),
+      ]);
+      const requiredStages = selectRequiredApprovalStages(submission.findings, stages, rules);
+      if (!requiredStages.length) return { allowed: false, reason: "No approval stages are configured for this workspace." };
+      await tx.submissionStage.deleteMany({ where: { submissionId: id } });
+      await tx.submissionStage.createMany({ data: requiredStages.map((stage) => ({ submissionId: id, stageId: stage.id, status: "pending" })) });
+
       const updated = await tx.submission.update({
         where: { id },
         data: {
@@ -75,6 +84,8 @@ export async function POST(
           previousStatus: submission.status,
           newStatus: "in_review",
           totalFindings: submission.findings.length,
+          requiredStageIds: requiredStages.map((stage) => stage.id),
+          requiredStageNames: requiredStages.map((stage) => stage.name),
         },
       });
 

@@ -18,7 +18,7 @@ export interface SessionUser {
   id: string;
   email: string;
   name: string;
-  role: "creator" | "manager" | "reviewer" | "admin";
+  role: "creator" | "manager" | "reviewer" | "legal_reviewer" | "admin";
   workspaceId: string;
 }
 
@@ -60,20 +60,22 @@ export function Navbar({ user }: NavbarProps) {
       label: "Review Queue",
       href: "/queue",
       icon: ListOrdered,
-      show: role === "manager" || role === "reviewer" || role === "admin",
+      show: role === "manager" || role === "reviewer" || role === "legal_reviewer" || role === "admin",
     },
     {
       label: "Audit Trail",
       href: "/audit",
       icon: ShieldCheck,
-      show: role === "manager" || role === "reviewer" || role === "admin",
+      show: role === "manager" || role === "reviewer" || role === "legal_reviewer" || role === "admin",
     },
+    { label: "Approval Matrix", href: "/settings/approval-matrix", icon: ShieldCheck, show: role === "admin" },
   ];
 
   const roleColors: Record<string, string> = {
     creator: "bg-teal-50 text-teal-700 border-teal-300 ring-teal-500/30",
     manager: "bg-indigo-50 text-indigo-700 border-indigo-300 ring-indigo-500/30",
     reviewer: "bg-sky-50 text-sky-700 border-sky-300 ring-sky-500/30",
+    legal_reviewer: "bg-slate-100 text-slate-800 border-slate-300 ring-slate-500/30",
     admin: "bg-purple-50 text-purple-700 border-purple-300 ring-purple-500/30",
   };
 

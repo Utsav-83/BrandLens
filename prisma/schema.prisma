@@ -11,7 +11,14 @@ enum Role {
   creator
   manager
   reviewer
+  legal_reviewer
   admin
+}
+
+enum ApprovalStageStatus {
+  pending
+  approved
+  changes_requested
 }
 
 enum SourceType {
@@ -76,6 +83,8 @@ model Workspace {
   sources     Source[]
   submissions Submission[]
   auditLogs   AuditLog[]
+  approvalStages ApprovalStage[]
+  approvalRules ApprovalRule[]
 
   @@map("workspaces")
 }
@@ -95,6 +104,7 @@ model User {
   approvedSubmissions Submission[] @relation("ApprovedSubmissions")
   comments        Comment[]
   createdVersions SourceVersion[]
+  stageDecisions SubmissionStage[]
 
   @@index([workspaceId])
   @@map("users")
@@ -172,10 +182,58 @@ model Submission {
   approvedBy    User?            @relation("ApprovedSubmissions", fields: [approvedById], references: [id], onDelete: SetNull)
   findings      Finding[]
   comments      Comment[]
+  stages        SubmissionStage[]
 
   @@index([workspaceId])
   @@index([creatorId])
   @@map("submissions")
+}
+
+model ApprovalStage {
+  id                   String      @id @default(uuid())
+  workspaceId          String
+  name                 String
+  order                Int
+  requiredReviewerRole Role
+  workspace            Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  rules                ApprovalRule[]
+  submissionStages     SubmissionStage[]
+
+  @@unique([workspaceId, name])
+  @@unique([workspaceId, order])
+  @@index([workspaceId])
+  @@map("approval_stages")
+}
+
+model ApprovalRule {
+  id              String          @id @default(uuid())
+  workspaceId     String
+  category        String
+  minimumSeverity FindingSeverity
+  stageId         String
+  workspace       Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  stage           ApprovalStage   @relation(fields: [stageId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, category, minimumSeverity, stageId])
+  @@index([workspaceId])
+  @@map("approval_rules")
+}
+
+model SubmissionStage {
+  id           String              @id @default(uuid())
+  submissionId String
+  stageId      String
+  status       ApprovalStageStatus @default(pending)
+  decidedById  String?
+  decidedAt    DateTime?
+  comment      String?             @db.Text
+  submission   Submission          @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  stage        ApprovalStage       @relation(fields: [stageId], references: [id], onDelete: Restrict)
+  decidedBy    User?               @relation(fields: [decidedById], references: [id], onDelete: SetNull)
+
+  @@unique([submissionId, stageId])
+  @@index([submissionId])
+  @@map("submission_stages")
 }
 
 model Finding {

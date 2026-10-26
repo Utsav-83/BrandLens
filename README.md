@@ -22,7 +22,7 @@ BrandLens is a pre-publication brand-governance platform for marketing, copy, an
 2. **Rules first, AI second**: Deterministic checks (glossary, banned absolutes, numerical fact comparisons, tone/slang, accessibility, reading ease) execute without an LLM. The AI judge evaluates nuanced tone and claim context only.
 3. **The AI never publishes or overwrites**: Human creators accept, edit, or reject each proposed rewrite. Managers and reviewers approve or request revisions.
 4. **Resilient zero-failure mode**: If no LLM key is configured or the LLM times out (20s timeout), BrandLens degrades gracefully to **rules-only mode** with a visible banner (`AI review unavailable, rules-only results`).
-5. **Zero-guidance judging**: 1-click demo logins (`creator`, `manager`, `reviewer`, `admin`), pre-seeded "Aurora Pay" fintech workspace, and a **"Load sample flawed content"** button.
+5. **Zero-guidance judging**: 1-click demo logins (`creator`, `reviewer`, `legal_reviewer`, `manager`, `admin`), pre-seeded "Aurora Pay" fintech workspace, and a **"Load sample flawed content"** button.
 6. **Cryptographic tamper-evident audit ledger**: Every review event, human decision, edit, comment, and state change is sealed in a SHA-256 hash chain protected by transaction-level Postgres advisory locks.
 
 ---
@@ -82,7 +82,7 @@ flowchart TD
    - Click **"Reject"** on a finding and enter a justification (e.g. *"Approved by legal council"*).
 6. **Submit for Review**: Resolve remaining High findings, then click **"Submit for Review"**.
 7. **Switch to Reviewer**: Click **Logout**, then click **"Continue as Reviewer"** (`reviewer@aurora.test`).
-8. **Approve Publication**: Open **"Review Queue"**, click the draft, inspect the Full Diff tab, and click **"Approve Publication"**.
+8. **Approve by Stage**: Brand reviewer approves Brand, Legal reviewer approves Legal, then manager approves Compliance when a high-severity finding requires it. Each stage must be decided in order.
 9. **Verify Audit Trail**: Go to **"Audit Trail"** (`/audit`) and click **"Verify Integrity"**. See the green cryptographic verification badge confirming that all SHA-256 records match without tampering!
 
 ---
@@ -93,10 +93,20 @@ flowchart TD
 | :--- | :--- | :--- | :--- |
 | **Creator** | `creator@aurora.test` | `AuroraDemo2026!` | Create submissions, upload docs, accept/edit/reject fixes, submit for review |
 | **Reviewer** | `reviewer@aurora.test` | `AuroraDemo2026!` | Access review queue, inspect diffs, comment, approve or request revisions |
+| **Legal Reviewer** | `legal_reviewer@aurora.test` | `AuroraDemo2026!` | Decide Legal approval stages after Brand |
 | **Manager** | `manager@aurora.test` | `AuroraDemo2026!` | Review queue, approve/request changes, view audit trail, verify integrity |
 | **Admin** | `admin@aurora.test` | `AuroraDemo2026!` | Full knowledge base write access, upload sources, audit trail verification |
 
 *When `DEMO_MODE=true` is enabled, one-click demo login buttons are active on the `/login` screen.*
+
+### Approval stage assignment
+
+- **Brand** → `reviewer@aurora.test` (`reviewer` role)
+- **Legal** → `legal_reviewer@aurora.test` (`legal_reviewer` role)
+- **Compliance** → `manager@aurora.test` (`manager` role); required for any high-severity finding
+- Admin can act on any stage, but cannot decide a submission they created.
+
+At submission time, the matrix uses every finding category present, including pending findings and findings with accepted, edited, or rejected-with-reason decisions. For example, a rejected `tone` finding still routes through Brand. Matching category/severity rules add their stages; when no rule matches, Brand is required.
 
 ---
 

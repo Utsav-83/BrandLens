@@ -18,8 +18,13 @@ export const DEMO_USERS = [
   },
   {
     email: "reviewer@aurora.test",
-    name: "Rachel Reviewer",
+    name: "Rachel Brand Reviewer",
     role: "reviewer" as Role,
+  },
+  {
+    email: "legal_reviewer@aurora.test",
+    name: "Leah Legal Reviewer",
+    role: "legal_reviewer" as Role,
   },
   {
     email: "admin@aurora.test",
@@ -98,10 +103,10 @@ export async function ensureSeeded(): Promise<{ seeded: boolean; workspaceId: st
   // Check if already seeded without holding lock
   const existingWorkspace = await db.workspace.findFirst({
     where: { name: "Aurora Pay" },
-    include: { users: true },
+    include: { users: true, approvalStages: true, approvalRules: true },
   });
 
-  if (existingWorkspace && existingWorkspace.users.length >= 4) {
+  if (existingWorkspace && existingWorkspace.users.some((user) => user.email === "legal_reviewer@aurora.test") && existingWorkspace.approvalStages.length === 3 && existingWorkspace.approvalRules.length >= 10) {
     return { seeded: false, workspaceId: existingWorkspace.id };
   }
 
@@ -124,6 +129,42 @@ export async function ensureSeeded(): Promise<{ seeded: boolean; workspaceId: st
     }
 
     const workspaceId = workspace.id;
+
+    const stageDefinitions = [
+      { name: "Brand", order: 1, requiredReviewerRole: "reviewer" as Role },
+      { name: "Legal", order: 2, requiredReviewerRole: "legal_reviewer" as Role },
+      { name: "Compliance", order: 3, requiredReviewerRole: "manager" as Role },
+    ];
+    const stageRecords = new Map<string, { id: string }>();
+    for (const stage of stageDefinitions) {
+      const record = await tx.approvalStage.upsert({
+        where: { workspaceId_name: { workspaceId, name: stage.name } },
+        update: { order: stage.order, requiredReviewerRole: stage.requiredReviewerRole },
+        create: { workspaceId, ...stage },
+      });
+      stageRecords.set(stage.name, record);
+    }
+    const ruleDefinitions = [
+      { category: "unsupported_claim", minimumSeverity: "low" as const, stage: "Legal" },
+      { category: "outdated_fact", minimumSeverity: "low" as const, stage: "Legal" },
+      { category: "inconsistent_fact", minimumSeverity: "low" as const, stage: "Legal" },
+      { category: "claim", minimumSeverity: "low" as const, stage: "Legal" },
+      { category: "numeric", minimumSeverity: "low" as const, stage: "Legal" },
+      { category: "absolute", minimumSeverity: "low" as const, stage: "Legal" },
+      { category: "tone", minimumSeverity: "low" as const, stage: "Brand" },
+      { category: "brand_voice", minimumSeverity: "low" as const, stage: "Brand" },
+      { category: "terminology", minimumSeverity: "low" as const, stage: "Brand" },
+      { category: "glossary", minimumSeverity: "low" as const, stage: "Brand" },
+      { category: "*", minimumSeverity: "high" as const, stage: "Compliance" },
+    ];
+    for (const rule of ruleDefinitions) {
+      const stage = stageRecords.get(rule.stage)!;
+      await tx.approvalRule.upsert({
+        where: { workspaceId_category_minimumSeverity_stageId: { workspaceId, category: rule.category, minimumSeverity: rule.minimumSeverity, stageId: stage.id } },
+        update: {},
+        create: { workspaceId, category: rule.category, minimumSeverity: rule.minimumSeverity, stageId: stage.id },
+      });
+    }
 
     // Seed Users
     const userRecords: Record<string, { id: string; email: string; name: string; role: Role }> = {};

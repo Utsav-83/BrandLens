@@ -20,6 +20,8 @@ export async function GET() {
 
     return NextResponse.json({
       intact: result.intact,
+      valid: result.intact,
+      verified: result.intact,
       totalEntries: totalCount,
       brokenId: result.brokenId,
       reason: result.reason,

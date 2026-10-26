@@ -10,6 +10,7 @@ import {
   AlertTriangle,
   AlertCircle,
   Info,
+  Clock,
 } from "lucide-react";
 import { formatTimeAgo } from "@/lib/utils";
 
@@ -30,6 +31,7 @@ export default async function ReviewQueuePage() {
     where: {
       workspaceId: user.workspaceId,
       status: "in_review",
+      ...(user.role === "admin" ? {} : { stages: { some: { status: "pending", stage: { requiredReviewerRole: user.role } } } }),
     },
     include: {
       creator: { select: { id: true, name: true, email: true } },
@@ -37,6 +39,7 @@ export default async function ReviewQueuePage() {
         where: { decision: "pending", stale: false },
         select: { severity: true },
       },
+      stages: { include: { stage: { select: { name: true, order: true, requiredReviewerRole: true } } }, orderBy: { stage: { order: "asc" } } },
     },
     orderBy: { updatedAt: "asc" }, // oldest submissions first for fair FIFO review
   });
@@ -54,7 +57,7 @@ export default async function ReviewQueuePage() {
             </span>
           </div>
           <p className="text-sm text-slate-600 mt-1">
-            Marketing copy submitted by creators waiting for reviewer sign-off or change requests.
+            Marketing copy is routed to its next required approval stage.
           </p>
         </div>
 
@@ -92,6 +95,7 @@ export default async function ReviewQueuePage() {
                   <th scope="col" className="px-6 py-3.5 font-semibold text-slate-700">
                     Open Findings
                   </th>
+                  <th scope="col" className="px-6 py-3.5 font-semibold text-slate-700">Approval progress</th>
                   <th scope="col" className="px-6 py-3.5 font-semibold text-slate-700">
                     Submitted
                   </th>
@@ -133,6 +137,8 @@ export default async function ReviewQueuePage() {
                         </div>
                       </td>
 
+
+
                       <td className="px-6 py-4 whitespace-nowrap">
                         {sub.findings.length === 0 ? (
                           <span className="text-xs font-semibold text-emerald-600 flex items-center gap-1">
@@ -160,6 +166,17 @@ export default async function ReviewQueuePage() {
                             )}
                           </div>
                         )}
+                      </td>
+
+<td className="px-6 py-4">
+                        <ol className="flex flex-wrap gap-1.5" aria-label={`Approval stages for ${sub.title}`}>
+                          {sub.stages.map((item) => (
+                            <li key={item.id} className="inline-flex items-center gap-1 rounded border border-slate-300 px-2 py-1 text-[11px] text-slate-800">
+                              {item.status === "approved" ? <CheckCircle2 className="h-3 w-3" aria-hidden="true" /> : item.status === "changes_requested" ? <AlertTriangle className="h-3 w-3" aria-hidden="true" /> : <Clock className="h-3 w-3" aria-hidden="true" />}
+                              {item.stage.name}: {item.status.replaceAll("_", " ")}
+                            </li>
+                          ))}
+                        </ol>
                       </td>
 
                       <td className="px-6 py-4 whitespace-nowrap text-xs text-slate-600">

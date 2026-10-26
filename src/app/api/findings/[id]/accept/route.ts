@@ -76,9 +76,34 @@ export async function POST(
 
       const replacementText = finding.suggestedFix;
       if (!replacementText) {
+        const updatedFinding = await tx.finding.update({
+          where: { id },
+          data: {
+            decision: "accepted",
+            finalText: finding.snippet,
+          },
+        });
+
+        await appendAudit(tx, {
+          workspaceId: user.workspaceId,
+          actorId: user.id,
+          action: "accept_finding",
+          entity: "finding",
+          entityId: id,
+          payload: {
+            submissionId: finding.submissionId,
+            ruleId: finding.ruleId,
+            snippet: finding.snippet,
+            noReplacement: true,
+          },
+        });
+
         return {
-          status: 400,
-          error: "Finding does not have an approved suggested fix to accept.",
+          status: 200,
+          finding: updatedFinding,
+          currentText: finding.submission.currentText,
+          shiftedCount: 0,
+          staleCount: 0,
         };
       }
 

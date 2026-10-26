@@ -51,7 +51,7 @@ export default async function DashboardPage() {
 
   // Fetch submissions based on user role
   const isManagerOrAbove =
-    user.role === "manager" || user.role === "reviewer" || user.role === "admin";
+    user.role === "manager" || user.role === "reviewer" || user.role === "legal_reviewer" || user.role === "admin";
 
   const submissions = await prisma.submission.findMany({
     where: {
@@ -144,6 +144,7 @@ export default async function DashboardPage() {
             <BookOpen className="w-4 h-4 text-slate-500" />
             Knowledge Base
           </Link>
+          {user.role === "admin" && <Link href="/settings/approval-matrix" className="inline-flex items-center gap-1.5 px-3.5 py-2 border border-slate-300 rounded-lg text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 shadow-xs transition">Approval matrix</Link>}
           <Link
             href="/new"
             className="inline-flex items-center gap-1.5 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-sm font-semibold shadow-xs transition"

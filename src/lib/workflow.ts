@@ -22,6 +22,89 @@ export interface SubmissionFindingState {
   decision: FindingDecision;
   stale: boolean;
   snippet: string;
+  category?: string;
+  rejectReason?: string | null;
+}
+
+export interface ApprovalStageForWorkflow {
+  id: string;
+  name: string;
+  order: number;
+  requiredReviewerRole: Role;
+}
+
+export interface ApprovalRuleForWorkflow {
+  category: string;
+  minimumSeverity: FindingSeverity;
+  stageId: string;
+}
+
+export interface ApprovalStageState {
+  stageId: string;
+  order: number;
+  status: "pending" | "approved" | "changes_requested";
+}
+
+const severityRank: Record<FindingSeverity, number> = { low: 1, medium: 2, high: 3 };
+
+/**
+ * Determine required stages from every current finding category, whether its
+ * decision is pending, accepted, edited, or rejected with a reason. This
+ * intentionally preserves unresolved risk categories as well as resolved ones.
+ */
+export function selectRequiredApprovalStages(
+  findings: Array<Pick<SubmissionFindingState, "category" | "severity" | "decision" | "rejectReason">>,
+  stages: ApprovalStageForWorkflow[],
+  rules: ApprovalRuleForWorkflow[]
+): ApprovalStageForWorkflow[] {
+  const required = new Set<string>();
+  const rank = new Map(stages.map((stage) => [stage.id, stage]));
+  for (const finding of findings) {
+    for (const rule of rules) {
+      if ((rule.category === "*" || rule.category === finding.category) && severityRank[finding.severity] >= severityRank[rule.minimumSeverity] && rank.has(rule.stageId)) {
+        required.add(rule.stageId);
+      }
+    }
+  }
+  if (required.size === 0) {
+    const brand = stages.find((stage) => stage.name.toLowerCase() === "brand");
+    if (brand) required.add(brand.id);
+  }
+  return [...required].map((id) => rank.get(id)!).sort((a, b) => a.order - b.order);
+}
+
+export function validateStageDecision(
+  input: { creatorId: string; status: SubmissionStatus },
+  actorId: string,
+  actorRole: Role,
+  stage: ApprovalStageForWorkflow,
+  stages: ApprovalStageState[]
+): { allowed: boolean; reason?: string } {
+  if (input.creatorId === actorId) return { allowed: false, reason: "Separation of duties violation: the submission creator cannot decide an approval stage." };
+  if (input.status !== "in_review") return { allowed: false, reason: `Cannot decide a stage when submission status is '${input.status}'.` };
+  const current = [...stages].sort((a, b) => a.order - b.order).find((item) => item.status === "pending");
+  if (!current || current.stageId !== stage.id) return { allowed: false, reason: "Approval stages must be decided in order." };
+  if (actorRole !== "admin" && actorRole !== stage.requiredReviewerRole) return { allowed: false, reason: `Role '${actorRole}' cannot decide the ${stage.name} stage; required role is '${stage.requiredReviewerRole}'.` };
+  return { allowed: true };
+}
+
+export function stageDecisionResult(
+  stages: ApprovalStageState[],
+  stageId: string,
+  decision: "approved" | "changes_requested"
+): { stages: ApprovalStageState[]; submissionStatus: "in_review" | "approved" | "changes_requested" } {
+  const ordered = [...stages].sort((a, b) => a.order - b.order);
+  const target = ordered.findIndex((stage) => stage.stageId === stageId);
+  if (target < 0) return { stages, submissionStatus: "in_review" };
+  const result = ordered.map((stage, index) => {
+    if (index === target) return { ...stage, status: decision };
+    if (decision === "changes_requested" && index > target) return { ...stage, status: "pending" as const };
+    return stage;
+  });
+  return {
+    stages: result,
+    submissionStatus: decision === "changes_requested" ? "changes_requested" : result.every((stage) => stage.status === "approved") ? "approved" : "in_review",
+  };
 }
 
 /**

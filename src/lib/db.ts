@@ -18,9 +18,7 @@ export function getPrismaClient(): PrismaClient {
   const adapter = new PrismaPg({ connectionString });
   const client = new PrismaClient({ adapter });
 
-  if (process.env.NODE_ENV !== "production") {
-    globalForPrisma.prisma = client;
-  }
+  globalForPrisma.prisma = client;
 
   return client;
 }
@@ -28,6 +26,17 @@ export function getPrismaClient(): PrismaClient {
 export const db = new Proxy({} as PrismaClient, {
   get(_target, prop) {
     const client = getPrismaClient();
+    if (prop === "$transaction") {
+      // Provide resilient timeouts for internet latency to managed Postgres (Neon)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return (arg1: any, arg2?: any) => {
+        if (typeof arg1 === "function") {
+          const options = { maxWait: 15000, timeout: 30000, ...(arg2 || {}) };
+          return client.$transaction(arg1, options);
+        }
+        return client.$transaction(arg1, arg2);
+      };
+    }
     const value = Reflect.get(client, prop);
     return typeof value === "function" ? value.bind(client) : value;
   },

@@ -143,6 +143,15 @@ export function LoginForm({ demoMode }: LoginFormProps) {
                   )}
                 </button>
 
+                <button
+                  type="button"
+                  onClick={() => handleDemoLogin("legal_reviewer")}
+                  disabled={!!loadingRole}
+                  className="w-full flex items-center justify-center py-3 px-4 border border-transparent rounded-lg shadow-xs text-sm font-semibold text-white bg-slate-700 hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-600 disabled:opacity-50 transition"
+                >
+                  {loadingRole === "legal_reviewer" ? "Logging in..." : "Continue as Legal Reviewer"}
+                </button>
+
                 {/* Small Admin button */}
                 <div className="pt-1 text-center">
                   <button

@@ -119,7 +119,7 @@ export function canViewSubmission(
   if (submission.workspaceId !== user.workspaceId) return false;
   if (user.role === "admin") return true;
   if (user.role === "creator") return submission.creatorId === user.id;
-  if (user.role === "manager" || user.role === "reviewer") {
+  if (user.role === "manager" || user.role === "reviewer" || user.role === "legal_reviewer") {
     return (REVIEWABLE_STATUSES as readonly string[]).includes(submission.status);
   }
   return false;
@@ -193,7 +193,7 @@ export function assertCanReview(
     );
   }
 
-  const allowedRoles: Role[] = ["manager", "reviewer", "admin"];
+  const allowedRoles: Role[] = ["manager", "reviewer", "legal_reviewer", "admin"];
   if (!allowedRoles.includes(user.role)) {
     return NextResponse.json(
       { error: `Forbidden: role '${user.role}' lacks permission to review submissions.` },

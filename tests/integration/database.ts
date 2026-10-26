@@ -11,13 +11,23 @@ export const ORIGIN = "http://localhost:3000";
 
 export async function truncateAllTables() {
   await integrationDb.$executeRawUnsafe(`TRUNCATE TABLE
-    "rate_limits", "audit_logs", "comments", "findings", "submissions",
+    "rate_limits", "audit_logs", "submission_stages", "approval_rules", "approval_stages", "comments", "findings", "submissions",
     "chunks", "source_versions", "sources", "users", "workspaces"
     RESTART IDENTITY CASCADE`);
 }
 
 export async function createWorkspace(name = "Integration Workspace") {
-  return integrationDb.workspace.create({ data: { name } });
+  const workspace = await integrationDb.workspace.create({ data: { name } });
+  await integrationDb.approvalStage.createMany({ data: [
+    { workspaceId: workspace.id, name: "Brand", order: 1, requiredReviewerRole: "reviewer" },
+    { workspaceId: workspace.id, name: "Legal", order: 2, requiredReviewerRole: "legal_reviewer" },
+    { workspaceId: workspace.id, name: "Compliance", order: 3, requiredReviewerRole: "manager" },
+  ] });
+  await integrationDb.approvalRule.createMany({ data: [
+    { workspaceId: workspace.id, category: "tone", minimumSeverity: "low", stageId: (await integrationDb.approvalStage.findFirstOrThrow({ where: { workspaceId: workspace.id, name: "Brand" } })).id },
+    { workspaceId: workspace.id, category: "terminology", minimumSeverity: "low", stageId: (await integrationDb.approvalStage.findFirstOrThrow({ where: { workspaceId: workspace.id, name: "Brand" } })).id },
+  ] });
+  return workspace;
 }
 
 export async function createUser(workspaceId: string, role: Role, overrides: { email?: string; password?: string } = {}) {

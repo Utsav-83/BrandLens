@@ -39,6 +39,10 @@ export default async function SubmissionPage({ params }: PageProps) {
         },
         orderBy: { createdAt: "asc" },
       },
+      stages: {
+        include: { stage: { select: { id: true, name: true, order: true, requiredReviewerRole: true } }, decidedBy: { select: { name: true } } },
+        orderBy: { stage: { order: "asc" } },
+      },
     },
   });
 
@@ -84,6 +88,7 @@ export default async function SubmissionPage({ params }: PageProps) {
       createdAt: c.createdAt,
       author: c.author,
     })),
+    stages: submission.stages.map((stage) => ({ id: stage.id, stageId: stage.stageId, status: stage.status, comment: stage.comment, stage: stage.stage, decidedBy: stage.decidedBy })),
     auditLogs: auditLogs.map((log) => ({
       id: log.id,
       action: log.action,
